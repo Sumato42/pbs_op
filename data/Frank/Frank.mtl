@@ -1,0 +1,161 @@
+newmtl CC_Base_BodySG6
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Skin_Head_Diffuse - Copy.png
+Ni 1.00
+Ks 0.00 0.00 0.00
+map_Ks -mm 0 0.0226596 Std_Skin_Head_MicroNMask - Copy.jpg
+Ns 98.00
+newmtl CC_Base_BodySG8
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Skin_Arm_Diffuse.jpg
+Ni 1.00
+Ks 0.02 0.02 0.02
+Ns 98.00
+newmtl CC_Base_BodySG9
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Skin_Leg_Diffuse.jpg
+Ni 1.00
+Ks 0.02 0.02 0.02
+Ns 98.00
+newmtl CC_Base_BodySG10
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Nails_Diffuse.jpg
+bump Std_Nails_Normal.png -bm 1
+Ni 1.00
+newmtl CC_Base_BodySG11
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Eyelash_Diffuse.jpg
+bump Std_Eyelash_Normal.png -bm 1
+Ni 1.00
+Ks 0.00 0.00 0.00
+Ns 0.00
+newmtl CC_Base_TeethSG2
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Upper_Teeth_Diffuse.png
+Ni 1.00
+newmtl CC_Base_TeethSG3
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Lower_Teeth_Diffuse.png
+Ni 1.00
+newmtl CC_Base_TongueSG1
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Tongue_Diffuse.png
+Ni 1.00
+newmtl FBXASC051SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd M_Feet_BR02_03_D.png
+bump M_Feet_BR02_01_N.png -bm 0.0778816
+Ni 1.00
+newmtl H1:pilot_medium_bangalore_season_04_assimilation_legendary_01_FBXASC046001SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Hair_D copy.png
+Ni 1.00
+newmtl M_Legs_U_01FBXASC046mo_1SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd M_Legs_U_01_D.jpg
+bump M_Legs_U_01_N.png -bm -0.0778816
+Ni 1.00
+Ks 0.01 0.01 0.01
+Ns 48.00
+newmtl TonyHawkSG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.59 0.59 0.59
+Tf 1.00 1.00 1.00
+map_Kd SkateB_Tex1.bmp
+Ni 1.00
+Ks 0.00 0.00 0.00
+Ns 0.00
+newmtl TonyHawkSG1
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd SkateB_Tex2.bmp
+Ni 1.00
+Ks 0.00 0.00 0.00
+Ns 0.00
+newmtl lambert8SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd Std_Eye_L_Diffuse - C2opy.jpg
+Ni 1.00
+Ks 0.00 0.00 0.00
+map_Ks -mm 0 0.0550088 CAL05.jpg
+Ns 98.00
+newmtl lambert12SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd scalp_Diffuse.jpg
+Ni 1.00
+newmtl lambert17SG
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 0.00 0.00 0.00
+Ni 1.00
+newmtl lambert20SG
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 0.00 0.00 0.00
+Ni 1.00
+newmtl lambert22SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd defaultMat1_albedo.jpg
+Ni 1.00
+newmtl phong8SG
+illum 4
+Kd 0.50 0.50 0.50
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+Ni 1.00
+Ks 0.03 0.03 0.03
+Ns 18.00
+newmtl shoes_3SG
+illum 4
+Kd 0.00 0.00 0.00
+Ka 0.00 0.00 0.00
+Tf 1.00 1.00 1.00
+map_Kd shoes_3_mat_albedo.jpg
+Ni 1.00
