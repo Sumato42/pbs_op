@@ -1,0 +1,131 @@
+#
+# Wavefront material file
+# Converted by Meshlab Group
+#
+
+newmtl material_0
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Tongue_Diffuse.png
+
+newmtl material_1
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd dummy.png
+
+newmtl material_2
+Ka 0.200000 0.200000 0.200000
+Kd 0.498039 0.498039 0.498039
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd dummy.png
+
+newmtl material_3
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Skin_Arm_Diffuse.jpg
+
+newmtl material_4
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Skin_Leg_Diffuse.jpg
+
+newmtl material_5
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Nails_Diffuse.jpg
+
+newmtl material_6
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Eyelash_Diffuse.jpg
+
+newmtl material_7
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Upper_Teeth_Diffuse.png
+
+newmtl material_8
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd Std_Lower_Teeth_Diffuse.png
+
+newmtl material_9
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd scalp_Diffuse.jpg
+
+newmtl material_10
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd M_Legs_U_01_D.jpg
+
+newmtl material_11
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd shoes_3_mat_albedo.jpg
+
+newmtl material_12
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd M_Feet_BR02_03_D.png
+
+newmtl material_13
+Ka 0.200000 0.200000 0.200000
+Kd 0.000000 0.000000 0.000000
+Ks 1.000000 1.000000 1.000000
+Tr 1.000000
+illum 2
+Ns 0.000000
+map_Kd defaultMat1_albedo.jpg
+
