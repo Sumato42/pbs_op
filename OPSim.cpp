@@ -23,15 +23,24 @@ void OPSim::loadOBJ(){
 void OPSim::assignParticles() {
     // Get loaded vertex positions
     p_obj->getMesh(m_renderV, m_renderF);
-    std::cout << m_renderV.rows() << std::endl;
+    std::cout << m_renderF.rows() << std::endl;
 
     // Clear previous particles and initialize new particles at each vertex
     m_particles.clear();
-    for (int i = 0; i < m_renderV.rows(); i++) {
+    for (int i = 0; i < m_renderF.rows(); i++) {
         Particle particle;
 
-        Eigen::VectorXd rowVector = m_renderV.row(i);  // Extract the row vector from MatrixXd
-        particle.setPosition(rowVector.cast<float>()); 
+        // Place particles on the vertices of the mesh
+        // Eigen::VectorXd rowVector = m_renderV.row(i);
+        // particle.setPosition(rowVector.cast<float>()); 
+
+        // Place particles on the center of the mesh
+        Eigen::Vector3f v1 = m_renderV.row(m_renderF(i, 0)).cast<float>();
+        Eigen::Vector3f v2 = m_renderV.row(m_renderF(i, 1)).cast<float>();
+        Eigen::Vector3f v3 = m_renderV.row(m_renderF(i, 2)).cast<float>();
+
+        Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.0f;
+        particle.setPosition(centroid);
 
         // Print particle position
         // std::cout << "particle position: " << particle.getPosition() << std::endl;
