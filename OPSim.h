@@ -51,6 +51,8 @@ class OPSim : public Simulation {
         viewer.data().set_colors(m_renderC);           
     }
 
+    virtual void assignParticles();
+
 #pragma region SettersAndGetters
 
     void setLogFrequency(int f) { m_log_frequency = f; }
