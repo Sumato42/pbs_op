@@ -21,25 +21,28 @@ void OPSim::loadOBJ(){
 }
 
 void OPSim::assignParticles() {
-    std::string path = "circular.obj";
-
-    // Read OBJ file to get vertex positions
-    Eigen::MatrixXd V;
-    Eigen::MatrixXi F;
-    igl::readOBJ(path, V, m_renderTC, m_renderN, F, m_renderFTC, m_renderFN);
+    // Get loaded vertex positions
+    p_obj->getMesh(m_renderV, m_renderF);
+    std::cout << m_renderV.rows() << std::endl;
 
     // Clear previous particles and initialize new particles at each vertex
     m_particles.clear();
-    for (int i = 0; i < V.rows(); i++) {
+    for (int i = 0; i < m_renderV.rows(); i++) {
         Particle particle;
 
-        Eigen::VectorXd rowVector = V.row(i);  // Extract the row vector from MatrixXd
+        Eigen::VectorXd rowVector = m_renderV.row(i);  // Extract the row vector from MatrixXd
         particle.setPosition(rowVector.cast<float>()); 
 
-        // Set orientation and velocity to zero for now
+        // Print particle position
+        // std::cout << "particle position: " << particle.getPosition() << std::endl;
+
+        // Set orientation and velocity to zero in the beginning
         particle.setOrientation(Eigen::Quaternionf::Identity());
         particle.setVelocity(Eigen::Vector3f::Zero());
         
         m_particles.push_back(particle);
     }
+
+    // Print the size of particles
+    std::cout << "particles size: " << m_particles.size() << std::endl;
 }

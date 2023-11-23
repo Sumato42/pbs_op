@@ -32,6 +32,7 @@ class OPSim : public Simulation {
 
     virtual void resetMembers() override {
         p_obj->reset();
+        assignParticles();
     }
 
     virtual void updateRenderGeometry() override {

@@ -1,7 +1,7 @@
 #ifndef PARTICLE_H
 #define PARTICLE_H
 
-#include <Eigen/Dense> // Assuming Eigen for quaternion math
+#include <Eigen/Dense>
 
 class Particle {
 private:
