@@ -29,7 +29,6 @@ class OPSim : public Simulation {
         p_obj = &m_objects.back();
         m_gravity = Eigen::Vector3d(0, -9.81, 0);
         m_dt = 0.02/num_steps;
-        std::cout<<"0"<<std::endl;
     }
 
     virtual void resetMembers() override {
@@ -47,6 +46,8 @@ class OPSim : public Simulation {
         }
         
         p_obj->setMesh(xp, m_renderF);
+        assignParticles();
+        // updateAdjacencyList();
     }
 
     virtual void updateRenderGeometry() override {
@@ -68,13 +69,17 @@ class OPSim : public Simulation {
 
     virtual void collisionConstraint(Eigen::MatrixXd& particle_pos);
 
-
+    
     virtual void renderRenderGeometry(
         igl::opengl::glfw::Viewer &viewer) override {
-        
+            
         viewer.data().set_mesh(m_renderV, m_renderF);
-        viewer.data().set_colors(m_renderC);           
+        viewer.data().set_colors(m_renderC);
     }
+
+    virtual void assignParticles();
+
+    virtual void updateAdjacencyList(Eigen::MatrixXi m_renderF);
 
 #pragma region SettersAndGetters
 
