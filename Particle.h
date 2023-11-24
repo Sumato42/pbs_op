@@ -8,6 +8,7 @@ private:
     Eigen::Vector3f m_position; // Position of the particle
     Eigen::Vector3f m_velocity; // Velocity of the particle
     Eigen::Quaternionf m_orientation; // Orientation of the particle (stored as a quaternion)
+    
 
 public:
     Particle() : m_position(0, 0, 0), m_velocity(0, 0, 0), m_orientation(1, 0, 0, 0) {}

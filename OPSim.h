@@ -33,6 +33,7 @@ class OPSim : public Simulation {
     virtual void resetMembers() override {
         p_obj->reset();
         assignParticles();
+        // updateAdjacencyList();
     }
 
     virtual void updateRenderGeometry() override {
@@ -53,6 +54,8 @@ class OPSim : public Simulation {
     }
 
     virtual void assignParticles();
+
+    virtual void updateAdjacencyList(Eigen::MatrixXi m_renderF);
 
 #pragma region SettersAndGetters
 
