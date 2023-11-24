@@ -63,6 +63,7 @@ protected:
 	int m_id = -1;
 	Mesh m_mesh;
 	ObjType m_type;
+	std::string m_path;
 
 	double m_scale = 1.0;        // Scale
 	Eigen::Vector3d m_position;  // Position of the center of mass

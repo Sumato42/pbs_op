@@ -8,6 +8,8 @@
 bool BaseObject::loadMesh(const std::string& path) {
 	bool succ = false;
 
+	m_path = path;
+
 	std::ifstream infile(path);
 	if (!infile.good()) {
 		return false;
@@ -55,6 +57,7 @@ void BaseObject::findAndLoadMesh(const std::string& file) {
 void BaseObject::reset() {
 	setPosition(Eigen::Vector3d::Zero());
 	setRotation(Eigen::Matrix3d::Identity());
+	loadMesh(m_path);
 	resetMembers();
 }
 
@@ -69,7 +72,11 @@ void BaseObject::setID(int id) { m_id = id; }
 
 void BaseObject::setType(ObjType t) { m_type = t; }
 
-void BaseObject::setPosition(const Eigen::Vector3d& p) { m_position = p; }
+void BaseObject::setPosition(const Eigen::Vector3d& p) { 
+	for(int i = 0; i < m_mesh.V.rows(); i++){
+		m_mesh.V.row(i) += p;
+	}
+ }//m_position = p; }
 
 void BaseObject::setRotation(const Eigen::Quaterniond& q) {
 	m_quat = q;
@@ -97,14 +104,14 @@ Eigen::Matrix3d BaseObject::getRotationMatrix() const { return m_rot; }
 
 Eigen::Vector3d BaseObject::getVertexPosition(int vertexIndex) const {
 	return m_mesh.V.row(vertexIndex) * m_scale *
-		getRotationMatrix().transpose() +
-		getPosition().transpose();
+		getRotationMatrix().transpose();// +
+		//getPosition().transpose();
 }
 
 void BaseObject::getMesh(Eigen::MatrixXd& V, Eigen::MatrixXi& F) const {
 	// get mesh after rotation and translation
-	V = (m_mesh.V * m_scale * getRotationMatrix().transpose()).rowwise() +
-		getPosition().transpose();
+	V = (m_mesh.V * m_scale * getRotationMatrix().transpose()); //.rowwise() +
+		//getPosition().transpose();
 	F = m_mesh.F;
 }
 

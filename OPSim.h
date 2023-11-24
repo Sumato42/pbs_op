@@ -1,5 +1,6 @@
 #include <igl/readOBJ.h>
 #include "Simulation.h"
+#include <igl/edges.h>
 
 using namespace std;
 
@@ -23,15 +24,29 @@ class OPSim : public Simulation {
 
     virtual void init() override {
         std::string path = "cube.off";
-        //m_objects.clear();
-        //m_objects.push_back(RigidObject(path));
-        //p_obj = &m_objects.back();
-        loadOBJ();
-        reset();
+        m_objects.clear();
+        m_objects.push_back(RigidObject(path));
+        p_obj = &m_objects.back();
+        m_gravity = Eigen::Vector3d(0, -9.81, 0);
+        m_dt = 0.02/num_steps;
+        std::cout<<"0"<<std::endl;
     }
 
     virtual void resetMembers() override {
         p_obj->reset();
+        p_obj->setPosition(Eigen::Vector3d(0, 5, 0));
+        p_obj->getMesh(m_renderV, m_renderF);
+        p_vel = Eigen::MatrixXd::Zero(m_renderV.rows(), m_renderV.cols());
+        xp = m_renderV ;
+        igl::edges(m_renderF, m_renderE);
+        edge_dist = Eigen::VectorXd(m_renderE.rows());
+        
+        for(int i = 0; i < edge_dist.rows(); i++){
+            Eigen::Vector2i edge = m_renderE.row(i);
+            edge_dist[i]= (m_renderV.row(edge.x())-m_renderV.row(edge.y())).norm();
+        }
+        
+        p_obj->setMesh(xp, m_renderF);
     }
 
     virtual void updateRenderGeometry() override {
@@ -41,7 +56,17 @@ class OPSim : public Simulation {
 
 	virtual bool advance() override;
 
-    virtual void loadOBJ();
+    virtual void predict();
+
+    virtual void solve();
+
+    virtual void update();
+
+    virtual Eigen::Vector3d groundConstraint(Eigen::Vector3d particle_pos);
+
+    virtual void distanceConstraint(Eigen::MatrixXd& particle_pos, Eigen::MatrixXi edges);
+
+    virtual void collisionConstraint(Eigen::MatrixXd& particle_pos);
 
 
     virtual void renderRenderGeometry(
@@ -67,10 +92,19 @@ class OPSim : public Simulation {
     Eigen::MatrixXi m_renderF;  // face indices for rendering
     Eigen::MatrixXd m_renderC;  // face colors for rendering
 
-    Eigen::MatrixXd m_renderTC; // Texture Coordinates
-    Eigen::MatrixXd m_renderN;  // Normals
-    Eigen::MatrixXi m_renderFTC;  // not needed
-    Eigen::MatrixXi m_renderFN;  // not needed
+    Eigen::MatrixXd p_pos;
+    Eigen::MatrixXd p_vel;
+
+    Eigen::MatrixXd xp;
+    Eigen::Vector3d pp;
+    Eigen::Vector3d p_vel1;
+    Eigen::Vector3d m_gravity;
+    
+    int num_steps = 1;
+    float alpha = 0.0;
+    float particle_radius = 1.0;
+    Eigen::MatrixXi m_renderE;
+    Eigen::VectorXd edge_dist;
 
     int m_log_frequency;  // how often should we log the COM in the GUI
     Eigen::RowVector3d m_color;
