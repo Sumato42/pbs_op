@@ -22,6 +22,7 @@ void OPSim::predict(){
         xp = xp + p_vel * m_dt;
         solve();   
     }    
+}
 
 bool trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2) {
     int commonVertices = 0;
@@ -92,7 +93,7 @@ void OPSim::distanceConstraint(Eigen::MatrixXd& particle_pos, Eigen::MatrixXi ed
     }
 };
 
-void OPSim::collisionConstraint(){
+void OPSim::collisionConstraint(Eigen::MatrixXd& particle_pos){
     
 };
 
