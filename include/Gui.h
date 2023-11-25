@@ -166,6 +166,8 @@ protected:
 
 	int m_numRecords = 100;  // number of records to keep
 
+	bool m_scene_contains_mesh = true;
+
 };
 
 #endif

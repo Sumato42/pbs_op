@@ -40,7 +40,7 @@ void Gui::start() {
 
 	// setting up viewer
 	m_viewer.data().show_lines = false;
-	m_viewer.data().point_size = 5.0f;
+	m_viewer.data().point_size = 15.0f;
 	m_viewer.core.background_color.setOnes();
     m_viewer.data().set_face_based(true);
     m_viewer.data().shininess = 1.0;
@@ -276,6 +276,9 @@ bool Gui::mouseCallback(igl::opengl::glfw::Viewer &viewer,
 	float minDist = std::numeric_limits<float>::infinity();
 	int vertex = -1;
 	int object = -1;
+	if (!m_scene_contains_mesh) {
+		return false;
+	}
 	for (size_t i = 0; i < viewer.data_list.size(); i++) {
 		Eigen::MatrixXf Vf = viewer.data_list[i].V.cast<float>();
 		Eigen::MatrixXf projections;

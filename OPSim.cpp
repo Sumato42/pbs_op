@@ -21,10 +21,14 @@ bool OPSim::advance() {
 }
 
 void OPSim::predict(){
-    for(int i = 0; i < num_steps; i++){
-        xp = xp + p_vel * m_dt;
-        solve();   
-    }    
+    for (int i = 0; i < xp.rows(); i++) {
+        m_particleColors[i] = Eigen::Vector3d(1, 0, 0);
+
+        cubeCollision(i);
+    }
+    xp = xp + p_vel * m_dt;
+    
+    solve();   
 }
 
 bool trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2) {
@@ -65,7 +69,7 @@ int getParticleIndexByPosition(const Eigen::Vector3d& position) {
 
 void OPSim::solve(){
     for(int i = 0; i < xp.rows(); i++){
-        xp.row(i) = groundConstraint(xp.row(i));
+        //xp.row(i) = groundConstraint(xp.row(i));
     }
     distanceConstraint(xp, m_renderE);
     for (int i = 0; i < xp.rows(); i++) {
@@ -77,17 +81,36 @@ void OPSim::solve(){
 }
 
 void OPSim::update(){
-    p_vel = (xp-m_renderV) / m_dt;
-    p_vel1 = (pp-p_obj->getPosition()) / m_dt + m_gravity * m_dt;
+    //p_vel = (xp-m_renderV) / m_dt;
     for(int i = 0; i < p_vel.rows(); i++){
         p_vel.row(i) += m_gravity * m_dt;
     }
     m_renderV = xp;
-    p_obj->setMesh(m_renderV, m_renderF); 
+    //p_obj->setMesh(m_renderV, m_renderF); 
     for (int i = 0; i < m_particles.size(); i++) {
         m_particles[i].setPosition(m_renderV.row(i));
+        m_particleSim[i] = m_renderV.row(i);
     }
 }
+
+void OPSim::cubeCollision(int pid) {
+    // chech X
+    if (xp.row(pid).x() < -1 || xp.row(pid).x() > 1) {
+        p_vel.row(pid).x() = -p_vel.row(pid).x();
+        xp.row(pid).x() = xp.row(pid).x();
+    }
+    // check Y
+    if (xp.row(pid).y() < 0 || xp.row(pid).y() > 2) {
+        p_vel.row(pid).y() = -p_vel.row(pid).y();
+        xp.row(pid).y() = xp.row(pid).y();
+
+    }
+    // check Z
+    if (xp.row(pid).z() < -1 || xp.row(pid).z() > 1) {
+        p_vel.row(pid).z() = -p_vel.row(pid).z();
+        xp.row(pid).z() = xp.row(pid).z();
+    }
+};
 
 Eigen::Vector3d OPSim::groundConstraint(Eigen::Vector3d pa_pos){
         if(pa_pos.y() >= 0){
@@ -117,16 +140,24 @@ void OPSim::distanceConstraint(Eigen::MatrixXd& pa_pos, Eigen::MatrixXi edges){
 };
 
 void OPSim::collisionConstraint(int pid1, int pid2){
-    Eigen::Vector3d p1 = xp.row(pid1);
-    Eigen::Vector3d p2 = xp.row(pid2);
-    float dist = (p1 - p2).norm();
+    Eigen::Vector3d normal = xp.row(pid1) - xp.row(pid2);
+    float dist = normal.norm();
     if (dist > 0 && dist < 2 * particle_radius) {
-        float C = -(dist - 2 * particle_radius);
-        Eigen::Vector3d dC1 = (p1 - p2) / dist;
-        Eigen::Vector3d dC2 = (p2 - p1) / dist;
-        float lambda = -C / (pow(dC1.norm(), 2) + pow(dC2.norm(), 2) + alpha / pow(m_dt, 2));
-        xp.row(pid1) = p1 + lambda * dC1;
-        xp.row(pid2) = p2 + lambda * dC1;
+        float C = (dist - 2 * particle_radius) / 2;
+        Eigen::Vector3d dC1 = normal / dist * C;
+        Eigen::Vector3d dC2 = -normal / dist * C;
+        //float lambda = -C / (pow(dC1.norm(), 2) + pow(dC2.norm(), 2) + alpha / pow(m_dt, 2));
+        xp.row(pid1) +=  dC1;
+        xp.row(pid2) +=  dC2;
+
+        double v1 = p_vel.row(pid1).dot(normal);
+        double v2 = p_vel.row(pid2).dot(normal);
+
+        p_vel.row(pid1) += normal * (v2 - v1);
+        p_vel.row(pid2) += normal * (v1 - v2);
+        m_particleColors[pid1] = Eigen::Vector3d(1, 1, 0);
+        m_particleColors[pid2] = Eigen::Vector3d(1, 1, 0);
+
     }
 };
 
@@ -167,6 +198,9 @@ void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
 
 void OPSim::assignParticles() {
     // Get loaded vertex positions
+    if (p_obj) {
+        return;
+    }
     p_obj->getMesh(m_renderV, m_renderF);
 
     // Clear previous particles and initialize new particles at each vertex
@@ -195,7 +229,7 @@ void OPSim::assignParticles() {
         m_particles.push_back(particle);
 
         // Add particle position and color to the vectors for rendering
-        // m_particleSim.push_back(particle.getPosition()); exchanged with p_pos
+        m_particleSim.push_back(particle.getPosition()); 
         m_particleColors.push_back(m_color);
         p_pos.row(i) = particle.getPosition();
     }

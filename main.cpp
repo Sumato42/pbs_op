@@ -40,6 +40,7 @@ class OPGui : public Gui {
         //    };
         
         ////// start the simulator
+        m_scene_contains_mesh = false;
         start();
     }
 
