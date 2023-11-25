@@ -167,23 +167,19 @@ void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
 
 void OPSim::assignParticles() {
     // Get loaded vertex positions
-    //p_obj->getMesh(m_renderV, m_renderF);
+    p_obj->getMesh(m_renderV, m_renderF);
 
     // Clear previous particles and initialize new particles at each vertex
     m_particles.clear();
-    Eigen::MatrixXd obj_V;
-    Eigen::MatrixXi obj_F;
-    
-    // For placing the particles on the center of the mesh, change the loop to: m_renderF.rows()
-    for (int i = 0; i < m_objects.size(); i++) {
-        m_objects[i].getMesh(obj_V, obj_F);
-        for (int j = 0; j < obj_V.rows(); j++) {
+    p_pos = Eigen::MatrixXd(m_renderV.rows(), 3);
 
-            Particle particle;
+    // For placing the particles on the center of the mesh, change the loop to: m_renderF.rows()
+    for (int i = 0; i < m_renderV.rows(); i++) {
+        Particle particle;
 
         // PARTICLES PLACED ON THE VERTICES OF THE MESH
         Eigen::VectorXd rowVector = m_renderV.row(i);
-        particle.setPosition(rowVector); 
+        particle.setPosition(rowVector);
 
         // PARTICLES PLACED ON THE CENTER OF THE MESH
         // Eigen::Vector3d v1 = m_renderV.row(m_renderF(i, 0));
@@ -192,15 +188,16 @@ void OPSim::assignParticles() {
         // Eigen::Vector3d centroid = (v1 + v2 + v3) / 3.0f;
         // particle.setPosition(centroid);
 
-        // Print particle position
+        // Set orientation and velocity to zero in the beginning
         particle.setOrientation(Eigen::Quaterniond::Identity());
         particle.setVelocity(Eigen::Vector3d::Zero());
-        
+
         m_particles.push_back(particle);
 
         // Add particle position and color to the vectors for rendering
-        m_particleSim.push_back(particle.getPosition());
+        // m_particleSim.push_back(particle.getPosition()); exchanged with p_pos
         m_particleColors.push_back(m_color);
+        p_pos.row(i) = particle.getPosition();
     }
 
     // Update adjacency matrix

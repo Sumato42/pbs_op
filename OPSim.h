@@ -21,8 +21,8 @@ struct Spring {
  */
 class OPSim : public Simulation {
    public:
-    OPSim() : Simulation() {
-        init();
+    OPSim(igl::opengl::glfw::Viewer& viewer) : Simulation() {
+        init(viewer);
         m_particleSim.clear();
         m_particleColors.clear();
         m_color = Eigen::RowVector3d(1.0, 0.0, 0.0);
@@ -99,6 +99,7 @@ class OPSim : public Simulation {
 
     virtual void resetMembers() override {
 
+        //Reseting the objects by loading them again
         loadSceneMeshes();
 
         /* Needed if we want to avoid to combine all meshes to a hube single one
@@ -115,14 +116,13 @@ class OPSim : public Simulation {
         */
         
         //assign particles after reseting the objects
-        p_obj->reset();
         m_particleSim.clear();
         m_particleColors.clear();
         assignParticles();
         
         // set the initial parameter values for PBD
         xp = p_pos;
-        //p_vel = Eigen::MatrixXd::Zero(m_renderV.rows(), 3);
+        p_vel = Eigen::MatrixXd::Zero(xp.rows(), 3);
         
         igl::edges(m_renderF, m_renderE);
         edge_dist = Eigen::VectorXd(m_renderE.rows());
@@ -134,7 +134,7 @@ class OPSim : public Simulation {
             int rows = m_renderV.rows();
             edge_dist[i]= (m_renderV.row(edge.x())-m_renderV.row(edge.y())).norm();
         }
-        
+                
         // updateAdjacencyList();
     }
 
@@ -182,11 +182,11 @@ class OPSim : public Simulation {
         viewer.data().set_colors(m_renderC);
         */
         
-        viewer.data().set_colors(m_renderC);
+        viewer.data().set_colors(Eigen::RowVector3d(0.0, 0.0, 1.0));
 
         // Render oriented particles
-        for (size_t i = 0; i < m_particleSim.size(); i++) {
-            viewer.data().add_points(m_particleSim[i].transpose(), m_particleColors[i]);
+        for (size_t i = 0; i < m_renderV.rows(); i++) {
+            viewer.data().add_points(m_renderV.row(i), m_particleColors[i]);
         }
            
     }
