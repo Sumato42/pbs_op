@@ -18,7 +18,7 @@ bool OPSim::advance() {
 }
 
 void OPSim::predict(){
-    for(int i = 0; i < num_steps;i++){
+    for(int i = 0; i < num_steps; i++){
         xp = xp + p_vel * m_dt;
         solve();   
     }    
@@ -53,6 +53,11 @@ void OPSim::solve(){
         xp.row(i) = groundConstraint(xp.row(i));
     }
     distanceConstraint(xp, m_renderE);
+    for (int i = 0; i < xp.rows(); i++) {
+        for (int j = i+1; j < xp.rows(); j++) {
+            collisionConstraint(i, j);
+        }
+    }
     update();
 }
 
@@ -63,38 +68,51 @@ void OPSim::update(){
         p_vel.row(i) += m_gravity * m_dt;
     }
     m_renderV = xp;
-    p_obj->setMesh(m_renderV, m_renderF);    
+    p_obj->setMesh(m_renderV, m_renderF); 
+    for (int i = 0; i < m_particles.size(); i++) {
+        m_particles[i].setPosition(m_renderV.row(i));
+    }
 }
 
-Eigen::Vector3d OPSim::groundConstraint(Eigen::Vector3d particle_pos){
-        if(particle_pos.y() >= 0){
-            return particle_pos;
+Eigen::Vector3d OPSim::groundConstraint(Eigen::Vector3d pa_pos){
+        if(pa_pos.y() >= 0){
+            return pa_pos;
         }
-        float C = particle_pos.y();
+        float C = pa_pos.y();
         Eigen::Vector3d dC = Eigen::Vector3d(0, 1, 0);
         float lambda = -C/(dC.norm()*dC.norm() + alpha/pow(m_dt,2));
-        particle_pos += lambda * dC;
-        return particle_pos;
+        pa_pos += lambda * dC;
+        return pa_pos;
 };
 
-void OPSim::distanceConstraint(Eigen::MatrixXd& particle_pos, Eigen::MatrixXi edges){
+void OPSim::distanceConstraint(Eigen::MatrixXd& pa_pos, Eigen::MatrixXi edges){
     
     for(int i = 0; i < edges.rows(); i++){
         Eigen::Vector2i edge = edges.row(i);
-        Eigen::Vector3d p1 = particle_pos.row(edge.x());
-        Eigen::Vector3d p2 = particle_pos.row(edge.y());
+        Eigen::Vector3d p1 = pa_pos.row(edge.x());
+        Eigen::Vector3d p2 = pa_pos.row(edge.y());
         float dist= (p1-p2).norm();
         float C = -(edge_dist[i]-dist);
         Eigen::Vector3d dC1 = (p1 - p2)/dist;
         Eigen::Vector3d dC2 = (p2 - p1)/dist;
         float lambda = -C/(pow(dC1.norm(),2) + pow(dC2.norm(),2) + alpha/pow(m_dt,2));
-        particle_pos.row(edge.x()) = p1 + lambda*dC1;
-        particle_pos.row(edge.y()) = p2 + lambda*dC2;
+        pa_pos.row(edge.x()) = p1 + lambda*dC1;
+        pa_pos.row(edge.y()) = p2 + lambda*dC2;
     }
 };
 
-void OPSim::collisionConstraint(Eigen::MatrixXd& particle_pos){
-    
+void OPSim::collisionConstraint(int pid1, int pid2){
+    Eigen::Vector3d p1 = xp.row(pid1);
+    Eigen::Vector3d p2 = xp.row(pid2);
+    float dist = (p1 - p2).norm();
+    if (dist > 0 && dist < 2 * particle_radius) {
+        float C = -(dist - 2 * particle_radius);
+        Eigen::Vector3d dC1 = (p1 - p2) / dist;
+        Eigen::Vector3d dC2 = (p2 - p1) / dist;
+        float lambda = -C / (pow(dC1.norm(), 2) + pow(dC2.norm(), 2) + alpha / pow(m_dt, 2));
+        xp.row(pid1) = p1 + lambda * dC1;
+        xp.row(pid2) = p2 + lambda * dC1;
+    }
 };
 
 void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
@@ -129,7 +147,7 @@ void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
 
 void OPSim::assignParticles() {
     // Get loaded vertex positions
-    p_obj->getMesh(m_renderV, m_renderF);
+    //p_obj->getMesh(m_renderV, m_renderF);
 
     //std::cout << m_renderF.cols() << std::endl;
     // std::cout << m_renderV.row(m_renderF(2, 0)) << std::endl;
@@ -170,10 +188,10 @@ void OPSim::assignParticles() {
         }
     }
 
-    particle_pos = Eigen::MatrixXd::Zero(m_particles.size(), 3);
+    p_pos = Eigen::MatrixXd::Zero(m_particles.size(), 3);
     p_vel = Eigen::MatrixXd::Zero(m_particles.size(), 3);
     for (int i = 0; i < m_particles.size(); i++){
-        particle_pos.row(i) = m_particles[i].getPosition();   
+        p_pos.row(i) = m_particles[i].getPosition();
     }
 
     // Print the size of particles

@@ -1,6 +1,9 @@
 #include <igl/readOBJ.h>
 #include "Simulation.h"
 #include <igl/edges.h>
+#include "Particle.h" // Oriented particle data structure
+#include <unordered_set> // For adjacency list
+#include "Hash.h"
 
 using namespace std;
 
@@ -27,7 +30,6 @@ class OPSim : public Simulation {
         for(int i = 1; i < m_objects.size(); i++){
             viewer.append_mesh();
         }
-        //viewer.append_mesh(); Needed if we don't want to combine all meshes to one huge single mesh
 
         m_gravity = Eigen::Vector3d(0, -9.81, 0);
         m_dt = 0.02/num_steps;
@@ -46,7 +48,9 @@ class OPSim : public Simulation {
 
         //cube_2
         m_objects.push_back(RigidObject(path));
-        m_objects[1].setPosition(Eigen::Vector3d(0, 1, -1));
+        m_objects[2].setPosition(Eigen::Vector3d(0, 1, -1));
+
+        // used if we want only one huge single mesh istead of multiple ones
         combineMeshes();
     }
 
@@ -111,8 +115,8 @@ class OPSim : public Simulation {
         assignParticles();
         
         // set the initial parameter values for PBD
-        xp = m_renderV;
-        p_vel = Eigen::MatrixXd::Zero(m_renderV.rows(), 3);
+        xp = p_pos;
+        //p_vel = Eigen::MatrixXd::Zero(m_renderV.rows(), 3);
         
         igl::edges(m_renderF, m_renderE);
         edge_dist = Eigen::VectorXd(m_renderE.rows());
@@ -141,11 +145,11 @@ class OPSim : public Simulation {
 
     virtual void update();
 
-    virtual Eigen::Vector3d groundConstraint(Eigen::Vector3d particle_pos);
+    virtual Eigen::Vector3d groundConstraint(Eigen::Vector3d pa_pos);
 
-    virtual void distanceConstraint(Eigen::MatrixXd& particle_pos, Eigen::MatrixXi edges);
+    virtual void distanceConstraint(Eigen::MatrixXd& pa_pos, Eigen::MatrixXi edges);
 
-    virtual void collisionConstraint(Eigen::MatrixXd& particle_pos);
+    virtual void collisionConstraint(int pid1, int pid2);
 
     
     virtual void renderRenderGeometry(
@@ -204,10 +208,9 @@ class OPSim : public Simulation {
     
     int num_steps = 1;
     float alpha = 0.0;
-    float particle_radius = 1.0;
+    float particle_radius = 0.01;
     Eigen::MatrixXi m_renderE;
     Eigen::VectorXd edge_dist;
-    Eigen::MatrixXd particle_pos;
 
     int m_log_frequency;  // how often should we log the COM in the GUI
     Eigen::RowVector3d m_color;
