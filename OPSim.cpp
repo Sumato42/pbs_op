@@ -138,30 +138,42 @@ void OPSim::assignParticles() {
 
     // Clear previous particles and initialize new particles at each vertex
     m_particles.clear();
-
+    Eigen::MatrixXd obj_V;
+    Eigen::MatrixXi obj_F;
+    
     // For placing the particles on the center of the mesh, change the loop to: m_renderF.rows()
-    for (int i = 0; i < m_renderV.rows(); i++) {
-        Particle particle;
+    for (int i = 0; i < m_objects.size(); i++) {
+        m_objects[i].getMesh(obj_V, obj_F);
+        for (int j = 0; j < obj_V.rows(); j++) {
 
-        // PARTICLES PLACED ON THE VERTICES OF THE MESH
-        Eigen::VectorXd rowVector = m_renderV.row(i);
-        particle.setPosition(rowVector.cast<float>()); 
+            Particle particle;
 
-        // PARTICLES PLACED ON THE CENTER OF THE MESH
-        // Eigen::Vector3f v1 = m_renderV.row(m_renderF(i, 0)).cast<float>();
-        // Eigen::Vector3f v2 = m_renderV.row(m_renderF(i, 1)).cast<float>();
-        // Eigen::Vector3f v3 = m_renderV.row(m_renderF(i, 2)).cast<float>();
-        // Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.0f;
-        // particle.setPosition(centroid);
+            // PARTICLES PLACED ON THE VERTICES OF THE MESH
+            Eigen::VectorXd rowVector = obj_V.row(j);
+            particle.setPosition(rowVector); 
 
-        // Print particle position
-        // std::cout << "particle position: " << particle.getPosition() << std::endl;
+            // PARTICLES PLACED ON THE CENTER OF THE MESH
+            // Eigen::Vector3f v1 = m_renderV.row(m_renderF(i, 0)).cast<float>();
+            // Eigen::Vector3f v2 = m_renderV.row(m_renderF(i, 1)).cast<float>();
+            // Eigen::Vector3f v3 = m_renderV.row(m_renderF(i, 2)).cast<float>();
+            // Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.0f;
+            // particle.setPosition(centroid);
 
-        // Set orientation and velocity to zero in the beginning
-        particle.setOrientation(Eigen::Quaternionf::Identity());
-        particle.setVelocity(Eigen::Vector3f::Zero());
-        
-        m_particles.push_back(particle);
+            // Print particle position
+            // std::cout << "particle position: " << particle.getPosition() << std::endl;
+
+            // Set orientation and velocity to zero in the beginning
+            particle.setOrientation(Eigen::Quaterniond::Identity());
+            particle.setVelocity(Eigen::Vector3d::Zero());
+            
+            m_particles.push_back(particle);
+        }
+    }
+
+    particle_pos = Eigen::MatrixXd::Zero(m_particles.size(), 3);
+    p_vel = Eigen::MatrixXd::Zero(m_particles.size(), 3);
+    for (int i = 0; i < m_particles.size(); i++){
+        particle_pos.row(i) = m_particles[i].getPosition();   
     }
 
     // Print the size of particles

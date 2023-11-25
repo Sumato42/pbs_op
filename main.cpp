@@ -26,7 +26,7 @@ class OPGui : public Gui {
         // p_springSim = new SpringSim();
         // p_springSim->setSpring(m_spring);
         // setSimulation(p_springSim);
-        p_opsim = new OPSim();
+        p_opsim = new OPSim(m_viewer);
         setSimulation(p_opsim);
 
         /////// interactive part of the simulator
