@@ -21,8 +21,11 @@ struct Spring {
  */
 class OPSim : public Simulation {
    public:
-    OPSim(igl::opengl::glfw::Viewer &viewer) : Simulation() {
-        init(viewer);
+    OPSim() : Simulation() {
+        init();
+        m_particleSim.clear();
+        m_particleColors.clear();
+        m_color = Eigen::RowVector3d(1.0, 0.0, 0.0);
     }
 
     virtual void init(igl::opengl::glfw::Viewer &viewer) {
@@ -112,6 +115,9 @@ class OPSim : public Simulation {
         */
         
         //assign particles after reseting the objects
+        p_obj->reset();
+        m_particleSim.clear();
+        m_particleColors.clear();
         assignParticles();
         
         // set the initial parameter values for PBD
@@ -176,6 +182,13 @@ class OPSim : public Simulation {
         viewer.data().set_colors(m_renderC);
         */
         
+        viewer.data().set_colors(m_renderC);
+
+        // Render oriented particles
+        for (size_t i = 0; i < m_particleSim.size(); i++) {
+            viewer.data().add_points(m_particleSim[i].transpose(), m_particleColors[i]);
+        }
+           
     }
 
     virtual void assignParticles();
@@ -214,4 +227,7 @@ class OPSim : public Simulation {
 
     int m_log_frequency;  // how often should we log the COM in the GUI
     Eigen::RowVector3d m_color;
+
+    vector<Eigen::Vector3d> m_particleSim;
+    vector<Eigen::RowVector3d> m_particleColors;
 };

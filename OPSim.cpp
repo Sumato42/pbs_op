@@ -5,7 +5,10 @@
 
 std::vector<Particle> m_particles; // Container for oriented particles
 // Define adjacency list as a vector of unordered sets
-std::vector<std::unordered_set<int>> m_adjacencyList;
+//std::vector<std::unordered_set<int>> m_adjacencyList;
+
+// Define the adjacency matrix as a matrix of booleans
+Eigen::MatrixXi adjacencyMatrix;
 
 bool OPSim::advance() {
     
@@ -43,9 +46,21 @@ bool trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& t
 
 void addEdge(int v1, int v2) {
     if (v1 >= 0 && v1 < m_particles.size() && v2 >= 0 && v2 < m_particles.size()) {
-        m_adjacencyList[v1].insert(v2); // Set edge from v1 to v2
-        m_adjacencyList[v2].insert(v1); // Set edge from v2 to v1
+        // m_adjacencyList[v1].insert(v2); // Set edge from v1 to v2
+        // m_adjacencyList[v2].insert(v1); // Set edge from v2 to v1
+
+        adjacencyMatrix(v1, v2) = 1;
+        adjacencyMatrix(v2, v1) = 1;
     }
+}
+
+int getParticleIndexByPosition(const Eigen::Vector3d& position) {
+    for (size_t i = 0; i < m_particles.size(); ++i) {
+        if (m_particles[i].getPosition() == position) {
+            return i;
+        }
+    }
+    return -1;
 }
 
 void OPSim::solve(){
@@ -115,19 +130,24 @@ void OPSim::collisionConstraint(int pid1, int pid2){
     }
 };
 
+
 void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
 
     // ADJACENCY LIST FOR PARTICLES PLACED ON THE VERTICES OF THE MESH
     int numTriangles = m_renderF.rows();
 
     for (int i = 0; i < numTriangles; ++i) {
-        int v1 = m_renderF(i, 0);
-        int v2 = m_renderF(i, 1);
-        int v3 = m_renderF(i, 2);
+        Eigen::Vector3d v1 = m_renderV.row(m_renderF(i, 0));
+        Eigen::Vector3d v2 = m_renderV.row(m_renderF(i, 1));
+        Eigen::Vector3d v3 = m_renderV.row(m_renderF(i, 2));
 
-        addEdge(v1, v2);
-        addEdge(v2, v3);
-        addEdge(v3, v1);
+        int i1 = getParticleIndexByPosition(v1);
+        int i2 = getParticleIndexByPosition(v2);
+        int i3 = getParticleIndexByPosition(v3);
+
+        if(i1 != -1 && i2 != -1) addEdge(i1, i2);
+        if(i2 != -1 && i3 != -1) addEdge(i2, i3);
+        if(i3 != -1 && i1 != -1) addEdge(i3, i1);
     }
 
 
@@ -149,11 +169,6 @@ void OPSim::assignParticles() {
     // Get loaded vertex positions
     //p_obj->getMesh(m_renderV, m_renderF);
 
-    //std::cout << m_renderF.cols() << std::endl;
-    // std::cout << m_renderV.row(m_renderF(2, 0)) << std::endl;
-    // std::cout << m_renderV.row(m_renderF(2, 1)) << std::endl;
-    // std::cout << m_renderV.row(m_renderF(2, 2)) << std::endl;
-
     // Clear previous particles and initialize new particles at each vertex
     m_particles.clear();
     Eigen::MatrixXd obj_V;
@@ -166,34 +181,29 @@ void OPSim::assignParticles() {
 
             Particle particle;
 
-            // PARTICLES PLACED ON THE VERTICES OF THE MESH
-            Eigen::VectorXd rowVector = obj_V.row(j);
-            particle.setPosition(rowVector); 
+        // PARTICLES PLACED ON THE VERTICES OF THE MESH
+        Eigen::VectorXd rowVector = m_renderV.row(i);
+        particle.setPosition(rowVector); 
 
-            // PARTICLES PLACED ON THE CENTER OF THE MESH
-            // Eigen::Vector3f v1 = m_renderV.row(m_renderF(i, 0)).cast<float>();
-            // Eigen::Vector3f v2 = m_renderV.row(m_renderF(i, 1)).cast<float>();
-            // Eigen::Vector3f v3 = m_renderV.row(m_renderF(i, 2)).cast<float>();
-            // Eigen::Vector3f centroid = (v1 + v2 + v3) / 3.0f;
-            // particle.setPosition(centroid);
+        // PARTICLES PLACED ON THE CENTER OF THE MESH
+        // Eigen::Vector3d v1 = m_renderV.row(m_renderF(i, 0));
+        // Eigen::Vector3d v2 = m_renderV.row(m_renderF(i, 1));
+        // Eigen::Vector3d v3 = m_renderV.row(m_renderF(i, 2));
+        // Eigen::Vector3d centroid = (v1 + v2 + v3) / 3.0f;
+        // particle.setPosition(centroid);
 
-            // Print particle position
-            // std::cout << "particle position: " << particle.getPosition() << std::endl;
+        // Print particle position
+        particle.setOrientation(Eigen::Quaterniond::Identity());
+        particle.setVelocity(Eigen::Vector3d::Zero());
+        
+        m_particles.push_back(particle);
 
-            // Set orientation and velocity to zero in the beginning
-            particle.setOrientation(Eigen::Quaterniond::Identity());
-            particle.setVelocity(Eigen::Vector3d::Zero());
-            
-            m_particles.push_back(particle);
-        }
+        // Add particle position and color to the vectors for rendering
+        m_particleSim.push_back(particle.getPosition());
+        m_particleColors.push_back(m_color);
     }
 
-    p_pos = Eigen::MatrixXd::Zero(m_particles.size(), 3);
-    p_vel = Eigen::MatrixXd::Zero(m_particles.size(), 3);
-    for (int i = 0; i < m_particles.size(); i++){
-        p_pos.row(i) = m_particles[i].getPosition();
-    }
-
-    // Print the size of particles
-    std::cout << "particles size: " << m_particles.size() << std::endl;
+    // Update adjacency matrix
+    adjacencyMatrix = Eigen::MatrixXi::Zero(m_particles.size(), m_particles.size());
+    updateAdjacencyList(m_renderF);
 }
