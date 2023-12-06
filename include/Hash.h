@@ -2,19 +2,21 @@
 #include <vector>
 
 class Hash {
-    Hash(double spacing, int maxNumObjects) : spacing(spacing), tableSize(2 * maxNumObjects),
-                                              cellStart(tableSize + 1), cellEntries(maxNumObjects),
-                                              queryIds(maxNumObjects), querySize(0) {}
-
-    void create(const Eigen::MatrixXd& pos) {
-        int numObjects = std::min(static_cast<int>(pos.rows()), static_cast<int>(cellEntries.size()));
+    public:
+        Hash(double spacing, int maxNumObjects) : spacing(spacing), tableSize(2 * maxNumObjects),
+                                                  cellStart(tableSize + 1), cellEntries(maxNumObjects),
+                                                  queryIds(maxNumObjects), querySize(0) {}
+    void create(const std::vector<Particle> particles) {
+        int numObjects = std::min(static_cast<int>(particles.size()), static_cast<int>(cellEntries.size()));
 
         // Determine cell sizes
         cellStart.clear();
         cellEntries.clear();
+        cellStart.resize(tableSize + 1, 0);
+        cellEntries.resize(numObjects + 1);
 
         for (int i = 0; i < numObjects; i++) {
-            int h = hashPos(pos, i);
+            int h = hashPos(particles[i].getPosition());
             cellStart[h]++;
         }
 
@@ -28,20 +30,21 @@ class Hash {
 
         // Fill in objects ids
         for (int i = 0; i < numObjects; i++) {
-            int h = hashPos(pos, i);
+            int h = hashPos(particles[i].getPosition());
             cellStart[h]--;
             cellEntries[cellStart[h]] = i;
         }
     }
 
-    void query(const Eigen::MatrixXd& pos, int nr, double maxDist) {
-        int x0 = intCoord(pos(nr, 0) - maxDist);
-        int y0 = intCoord(pos(nr, 1) - maxDist);
-        int z0 = intCoord(pos(nr, 2) - maxDist);
+    void query(const Particle particle,  double maxDist) {
+        Eigen::Vector3d pos = particle.getPosition();
+        int x0 = intCoord(pos.x() - maxDist);
+        int y0 = intCoord(pos.y() - maxDist);
+        int z0 = intCoord(pos.z() - maxDist);
 
-        int x1 = intCoord(pos(nr, 0) + maxDist);
-        int y1 = intCoord(pos(nr, 1) + maxDist);
-        int z1 = intCoord(pos(nr, 2) + maxDist);
+        int x1 = intCoord(pos.x() + maxDist);
+        int y1 = intCoord(pos.y() + maxDist);
+        int z1 = intCoord(pos.z() + maxDist);
 
         querySize = 0;
 
@@ -60,12 +63,14 @@ class Hash {
             }
         }
     }
+    
+    std::vector<int> queryIds;
     private:
         double spacing;
         int tableSize;
         std::vector<int> cellStart;
         std::vector<int> cellEntries;
-        std::vector<int> queryIds;
+        
         int querySize;
 
         int hashCoords(int xi, int yi, int zi) {
@@ -77,7 +82,7 @@ class Hash {
             return static_cast<int>(std::floor(coord / spacing));
         }
 
-        int hashPos(const Eigen::MatrixXd& pos, int nr) {
-            return hashCoords(intCoord(pos(nr, 0)), intCoord(pos(nr, 1)), intCoord(pos(nr, 2)));
+        int hashPos(const Eigen::Vector3d& pos) {
+            return hashCoords(intCoord(pos.x()), intCoord(pos.y()), intCoord(pos.z()));
         }
 };

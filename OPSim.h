@@ -36,6 +36,7 @@ class OPSim : public Simulation {
 
         m_gravity = Eigen::Vector3d(0, -9.81, 0);
         m_dt = 0.02/num_steps;
+       
     }
 
     virtual void loadSceneMeshes(){
@@ -43,9 +44,10 @@ class OPSim : public Simulation {
         // COLLISION SCENE
         m_gravity = Eigen::Vector3d(0, 0, 0);
 
+        m_particles.clear();
         m_particleSim.clear();
         m_particleColors.clear();
-        int num_particles_per_dim = 8;
+        int num_particles_per_dim = 5;
         double cube_size = 2;
 
         Eigen::Vector3d start = Eigen::Vector3d(-cube_size/2, 0, -cube_size/2);
@@ -57,14 +59,18 @@ class OPSim : public Simulation {
             for (int j = 1; j < num_particles_per_dim-1; j++) {
                 for (int k = 1; k < num_particles_per_dim-1; k++) {
                     position = start + i * step_X + j * step_Y + k * step_Z;
+                    Particle part;
+                    part.setPosition(position);
+                    part.setVelocity(Eigen::Vector3d::Random());
+                    m_particles.push_back(part);
                     m_particleSim.push_back(position);
                     m_particleColors.push_back(Eigen::Vector3d(1, 0, 0));
                 }
             }
         }
+        /*
 
-
-        /* CUBE SCENE
+        // CUBE SCENE
         
         std::string path = "cube.off";
         m_objects.clear();
@@ -78,7 +84,7 @@ class OPSim : public Simulation {
 
         //cube_2
         m_objects.push_back(RigidObject(path));
-        m_objects[2].setPosition(Eigen::Vector3d(0, 1, -1));
+        m_objects[2].setPosition(Eigen::Vector3d(0, 1, -2));
 
         
         
@@ -86,10 +92,12 @@ class OPSim : public Simulation {
         // used if we want only one huge single mesh istead of multiple ones
         combineMeshes();
         */
+        
     }
 
     virtual void combineMeshes(){
         if (m_objects.size() == 0) {
+            std::cout << m_objects.size() << std::endl;
             return;
         }
         Eigen::MatrixXd V1;
@@ -156,13 +164,21 @@ class OPSim : public Simulation {
         
         // set the initial parameter values for PBD
         //xp = p_pos;
-        std::cout << m_particleSim.size() << std::endl;
-        m_renderV = Eigen::MatrixXd(m_particleSim.size(), 3);
-        for (int i = 0; i < m_particleSim.size(); i++) {
-            m_renderV.row(i) = m_particleSim[i];
+        //p_vel = Eigen::MatrixXd::Zero(xp.rows(), 3);
+        std::cout <<"Num Particles: "<< m_particles.size() << endl;
+        m_particleHash = new Hash(2 * particle_radius, m_particles.size());
+        m_particleHash->create(m_particles);
+
+        // Collision example
+        //std::cout << m_particleSim.size() << std::endl;
+        m_renderV = Eigen::MatrixXd(m_particles.size(), 3);
+        p_vel = Eigen::MatrixXd(m_particles.size(), 3);
+        for (int i = 0; i < m_particles.size(); i++) {
+            m_renderV.row(i) = m_particles[i].getPosition();
+            p_vel.row(i) = m_particles[i].getVelocity();
         }
+         
         xp = m_renderV;
-        p_vel = Eigen::MatrixXd::Random(xp.rows(), 3);
         
         if (m_renderF.rows() != 0) {
             igl::edges(m_renderF, m_renderE);
@@ -175,6 +191,7 @@ class OPSim : public Simulation {
                 int rows = m_renderV.rows();
                 edge_dist[i] = (m_renderV.row(edge.x()) - m_renderV.row(edge.y())).norm();
             }
+            std::cout << "Faces: " << m_renderF.rows() << std::endl;
         }
         
                 
@@ -207,9 +224,10 @@ class OPSim : public Simulation {
     virtual void renderRenderGeometry(
         igl::opengl::glfw::Viewer &viewer) override {
         // Used if scene contains meshes
-        // viewer.data().set_mesh(m_renderV, m_renderF);
-        // viewer.data().set_colors(Eigen::RowVector3d(0.0, 0.0, 1.0));
-
+        if (m_objects.size() != 0) {
+            viewer.data().set_mesh(m_renderV, m_renderF);
+            viewer.data().set_colors(Eigen::RowVector3d(0.0, 0.0, 1.0));
+        }
         
         /* Code for using different meshes instead of a huge mesh
         int cube_0 = viewer.data_list[0].id;
@@ -241,6 +259,12 @@ class OPSim : public Simulation {
     virtual void assignParticles();
 
     virtual void updateAdjacencyList(Eigen::MatrixXi m_renderF);
+
+    virtual void addEdge(int v1, int v2);
+
+    virtual bool trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2);
+
+    virtual int getParticleIndexByPosition(const Eigen::Vector3d& position);
 
 #pragma region SettersAndGetters
 
@@ -277,4 +301,11 @@ class OPSim : public Simulation {
 
     vector<Eigen::Vector3d> m_particleSim;
     vector<Eigen::RowVector3d> m_particleColors;
+    Hash* m_particleHash = nullptr;
+    std::vector<Particle> m_particles; // Container for oriented particles
+    // Define adjacency list as a vector of unordered sets
+    //std::vector<std::unordered_set<int>> m_adjacencyList;
+
+    // Define the adjacency matrix as a matrix of booleans
+    Eigen::MatrixXi adjacencyMatrix;
 };

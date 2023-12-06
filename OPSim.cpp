@@ -3,18 +3,13 @@
 #include "Particle.h" // Oriented particle data structure
 #include <unordered_set> // For adjacency list
 
-std::vector<Particle> m_particles; // Container for oriented particles
-// Define adjacency list as a vector of unordered sets
-//std::vector<std::unordered_set<int>> m_adjacencyList;
-
-// Define the adjacency matrix as a matrix of booleans
-Eigen::MatrixXi adjacencyMatrix;
 
 bool OPSim::advance() {
     
-    m_time += m_dt;
+    m_time += m_dt*num_steps;
     m_step++; 
     for(int i = 0; i < num_steps; i++){ 
+        m_particleHash->create(m_particles);
         predict();
     }
     return false;
@@ -31,7 +26,7 @@ void OPSim::predict(){
     solve();   
 }
 
-bool trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2) {
+bool OPSim::trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2) {
     int commonVertices = 0;
 
     for (int i = 0; i < 3; ++i) {
@@ -48,7 +43,7 @@ bool trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& t
     return false; // Less than 2 common vertices, triangles are not neighbors
 }
 
-void addEdge(int v1, int v2) {
+void OPSim::addEdge(int v1, int v2) {
     if (v1 >= 0 && v1 < m_particles.size() && v2 >= 0 && v2 < m_particles.size()) {
         // m_adjacencyList[v1].insert(v2); // Set edge from v1 to v2
         // m_adjacencyList[v2].insert(v1); // Set edge from v2 to v1
@@ -58,7 +53,7 @@ void addEdge(int v1, int v2) {
     }
 }
 
-int getParticleIndexByPosition(const Eigen::Vector3d& position) {
+int OPSim::getParticleIndexByPosition(const Eigen::Vector3d& position) {
     for (size_t i = 0; i < m_particles.size(); ++i) {
         if (m_particles[i].getPosition() == position) {
             return i;
@@ -69,12 +64,15 @@ int getParticleIndexByPosition(const Eigen::Vector3d& position) {
 
 void OPSim::solve(){
     for(int i = 0; i < xp.rows(); i++){
-        //xp.row(i) = groundConstraint(xp.row(i));
+        xp.row(i) = groundConstraint(xp.row(i));
     }
     distanceConstraint(xp, m_renderE);
-    for (int i = 0; i < xp.rows(); i++) {
-        for (int j = i+1; j < xp.rows(); j++) {
-            collisionConstraint(i, j);
+    
+    for (int i = 0; i < m_particles.size(); i++) {
+        m_particleHash->query(m_particles[i], 2 * particle_radius);
+        std::vector<int> query = m_particleHash->queryIds;
+        for (int j = 0; j < query.size(); j++) {
+            collisionConstraint(i, query[j]);
         }
     }
     update();
@@ -143,7 +141,7 @@ void OPSim::collisionConstraint(int pid1, int pid2){
     Eigen::Vector3d normal = xp.row(pid1) - xp.row(pid2);
     float dist = normal.norm();
     if (dist > 0 && dist < 2 * particle_radius) {
-        float C = (dist - 2 * particle_radius) / 2;
+        float C = (dist - 2 * particle_radius) ;
         Eigen::Vector3d dC1 = normal / dist * C;
         Eigen::Vector3d dC2 = -normal / dist * C;
         //float lambda = -C / (pow(dC1.norm(), 2) + pow(dC2.norm(), 2) + alpha / pow(m_dt, 2));
@@ -198,7 +196,7 @@ void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
 
 void OPSim::assignParticles() {
     // Get loaded vertex positions
-    if (p_obj) {
+    if (m_objects.size() == 0) {
         return;
     }
     p_obj->getMesh(m_renderV, m_renderF);

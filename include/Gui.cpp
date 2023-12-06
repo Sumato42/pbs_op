@@ -40,7 +40,7 @@ void Gui::start() {
 
 	// setting up viewer
 	m_viewer.data().show_lines = false;
-	m_viewer.data().point_size = 15.0f;
+	m_viewer.data().point_size = 5.0f;
 	m_viewer.core.background_color.setOnes();
     m_viewer.data().set_face_based(true);
     m_viewer.data().shininess = 1.0;
