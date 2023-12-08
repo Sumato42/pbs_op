@@ -281,7 +281,7 @@ class OPSim : public Simulation {
     Eigen::MatrixXi m_renderF;  // face indices for rendering
     Eigen::MatrixXd m_renderC;  // face colors for rendering
 
-    //Eigen::MatrixXd p_pos;
+    Eigen::MatrixXd p_pos;
     Eigen::MatrixXd p_vel;
 
     Eigen::MatrixXd xp;
