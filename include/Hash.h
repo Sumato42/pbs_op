@@ -5,7 +5,7 @@ class Hash {
     public:
         Hash(double spacing, int maxNumObjects) : spacing(spacing), tableSize(2 * maxNumObjects),
                                                   cellStart(tableSize + 1), cellEntries(maxNumObjects),
-                                                  queryIds(maxNumObjects), querySize(0) {}
+                                                  queryIds(maxNumObjects), querySize(0), maxNumObjects(maxNumObjects) {}
     void create(const std::vector<Particle> particles) {
         int numObjects = std::min(static_cast<int>(particles.size()), static_cast<int>(cellEntries.size()));
 
@@ -13,7 +13,7 @@ class Hash {
         cellStart.clear();
         cellEntries.clear();
         cellStart.resize(tableSize + 1, 0);
-        cellEntries.resize(numObjects + 1);
+        cellEntries.resize(maxNumObjects, 0);
 
         for (int i = 0; i < numObjects; i++) {
             int h = hashPos(particles[i].getPosition());
@@ -47,6 +47,7 @@ class Hash {
         int z1 = intCoord(pos.z() + maxDist);
 
         querySize = 0;
+        queryIds.clear();
 
         for (int xi = x0; xi <= x1; xi++) {
             for (int yi = y0; yi <= y1; yi++) {
@@ -56,7 +57,8 @@ class Hash {
                     int end = cellStart[h + 1];
 
                     for (int i = start; i < end; i++) {
-                        queryIds[querySize] = cellEntries[i];
+                        //queryIds[querySize] = cellEntries[i];
+                        queryIds.push_back(cellEntries[i]);
                         querySize++;
                     }
                 }
@@ -68,6 +70,7 @@ class Hash {
     private:
         double spacing;
         int tableSize;
+        int maxNumObjects;
         std::vector<int> cellStart;
         std::vector<int> cellEntries;
         

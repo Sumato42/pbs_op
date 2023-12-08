@@ -33,10 +33,8 @@ class OPSim : public Simulation {
         for(int i = 1; i < m_objects.size(); i++){
             viewer.append_mesh();
         }
-
         m_gravity = Eigen::Vector3d(0, -9.81, 0);
-        m_dt = 0.02/num_steps;
-       
+        m_dt = 0.1/num_steps;
     }
 
     virtual void loadSceneMeshes(){
@@ -47,7 +45,7 @@ class OPSim : public Simulation {
         m_particles.clear();
         m_particleSim.clear();
         m_particleColors.clear();
-        int num_particles_per_dim = 5;
+        int num_particles_per_dim = 8+2;
         double cube_size = 2;
 
         Eigen::Vector3d start = Eigen::Vector3d(-cube_size/2, 0, -cube_size/2);
@@ -68,6 +66,7 @@ class OPSim : public Simulation {
                 }
             }
         }
+        
         /*
 
         // CUBE SCENE
@@ -157,7 +156,7 @@ class OPSim : public Simulation {
 
         */
         
-        //assign particles after reseting the objects
+        // assign particles after reseting the objects
         //m_particleSim.clear();
         //m_particleColors.clear();
         //assignParticles();
@@ -282,7 +281,7 @@ class OPSim : public Simulation {
     Eigen::MatrixXi m_renderF;  // face indices for rendering
     Eigen::MatrixXd m_renderC;  // face colors for rendering
 
-    Eigen::MatrixXd p_pos;
+    //Eigen::MatrixXd p_pos;
     Eigen::MatrixXd p_vel;
 
     Eigen::MatrixXd xp;

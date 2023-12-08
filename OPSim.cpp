@@ -18,48 +18,11 @@ bool OPSim::advance() {
 void OPSim::predict(){
     for (int i = 0; i < xp.rows(); i++) {
         m_particleColors[i] = Eigen::Vector3d(1, 0, 0);
-
         cubeCollision(i);
     }
     xp = xp + p_vel * m_dt;
     
     solve();   
-}
-
-bool OPSim::trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2) {
-    int commonVertices = 0;
-
-    for (int i = 0; i < 3; ++i) {
-        for (int j = 0; j < 3; ++j) {
-            if (tri1[i] == tri2[j]) {
-                ++commonVertices;
-                if (commonVertices == 2) {
-                    return true; // Two common vertices found, triangles are neighbors
-                }
-            }
-        }
-    }
-
-    return false; // Less than 2 common vertices, triangles are not neighbors
-}
-
-void OPSim::addEdge(int v1, int v2) {
-    if (v1 >= 0 && v1 < m_particles.size() && v2 >= 0 && v2 < m_particles.size()) {
-        // m_adjacencyList[v1].insert(v2); // Set edge from v1 to v2
-        // m_adjacencyList[v2].insert(v1); // Set edge from v2 to v1
-
-        adjacencyMatrix(v1, v2) = 1;
-        adjacencyMatrix(v2, v1) = 1;
-    }
-}
-
-int OPSim::getParticleIndexByPosition(const Eigen::Vector3d& position) {
-    for (size_t i = 0; i < m_particles.size(); ++i) {
-        if (m_particles[i].getPosition() == position) {
-            return i;
-        }
-    }
-    return -1;
 }
 
 void OPSim::solve(){
@@ -79,10 +42,10 @@ void OPSim::solve(){
 }
 
 void OPSim::update(){
-    //p_vel = (xp-m_renderV) / m_dt;
+    /*p_vel = (xp - m_renderV) / m_dt;
     for(int i = 0; i < p_vel.rows(); i++){
         p_vel.row(i) += m_gravity * m_dt;
-    }
+    }*/
     m_renderV = xp;
     //p_obj->setMesh(m_renderV, m_renderF); 
     for (int i = 0; i < m_particles.size(); i++) {
@@ -122,7 +85,6 @@ Eigen::Vector3d OPSim::groundConstraint(Eigen::Vector3d pa_pos){
 };
 
 void OPSim::distanceConstraint(Eigen::MatrixXd& pa_pos, Eigen::MatrixXi edges){
-    
     for(int i = 0; i < edges.rows(); i++){
         Eigen::Vector2i edge = edges.row(i);
         Eigen::Vector3d p1 = pa_pos.row(edge.x());
@@ -141,7 +103,7 @@ void OPSim::collisionConstraint(int pid1, int pid2){
     Eigen::Vector3d normal = xp.row(pid1) - xp.row(pid2);
     float dist = normal.norm();
     if (dist > 0 && dist < 2 * particle_radius) {
-        float C = (dist - 2 * particle_radius) ;
+        float C = (dist - 2 * particle_radius);
         Eigen::Vector3d dC1 = normal / dist * C;
         Eigen::Vector3d dC2 = -normal / dist * C;
         //float lambda = -C / (pow(dC1.norm(), 2) + pow(dC2.norm(), 2) + alpha / pow(m_dt, 2));
@@ -158,6 +120,42 @@ void OPSim::collisionConstraint(int pid1, int pid2){
 
     }
 };
+
+bool OPSim::trianglesAreNeighbors(const Eigen::Vector3i& tri1, const Eigen::Vector3i& tri2) {
+    int commonVertices = 0;
+
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            if (tri1[i] == tri2[j]) {
+                ++commonVertices;
+                if (commonVertices == 2) {
+                    return true; // Two common vertices found, triangles are neighbors
+                }
+            }
+        }
+    }
+
+    return false; // Less than 2 common vertices, triangles are not neighbors
+}
+
+void OPSim::addEdge(int v1, int v2) {
+    if (v1 >= 0 && v1 < m_particles.size() && v2 >= 0 && v2 < m_particles.size()) {
+        // m_adjacencyList[v1].insert(v2); // Set edge from v1 to v2
+        // m_adjacencyList[v2].insert(v1); // Set edge from v2 to v1
+
+        adjacencyMatrix(v1, v2) = 1;
+        adjacencyMatrix(v2, v1) = 1;
+    }
+}
+
+int OPSim::getParticleIndexByPosition(const Eigen::Vector3d& position) {
+    for (size_t i = 0; i < m_particles.size(); ++i) {
+        if (m_particles[i].getPosition() == position) {
+            return i;
+        }
+    }
+    return -1;
+}
 
 
 void OPSim::updateAdjacencyList(Eigen::MatrixXi m_renderF) {
