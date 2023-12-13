@@ -231,10 +231,40 @@ public class PBS : MonoBehaviour
                 groundConstraint(this.Particles_Sim[j].Position);
             }
             collisionConstraint();
-            // update meshes 
+      
         }
 
+        // update meshes
+        foreach (GameObject m in Objects_Anim)
+        {
+            UpdateMeshFromParticles(m);
+        }
+            
     }
+
+    void UpdateMeshFromParticles(GameObject gameObjectToUpdateMesh)
+    {
+        MeshFilter meshFilter = gameObjectToUpdateMesh.GetComponent<MeshFilter>();
+
+        if (meshFilter != null)
+        {
+            Mesh mesh = meshFilter.mesh;
+            Vector3[] vertices = mesh.vertices;
+
+            // Update mesh vertices based on Particle positions
+            for (int i = 0; i < Particles_Sim.Count; i++)
+            {
+                vertices[i] = Particles_Sim[i].Position;
+            }
+
+            // Assign updated vertices to the mesh
+            mesh.vertices = vertices;
+            mesh.RecalculateBounds();
+            meshFilter.mesh = mesh;
+        }
+    }
+
+
 
     void InitializeMatrixToZero(int[,] matrix)
     {
