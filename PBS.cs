@@ -329,7 +329,6 @@ public class PBS : MonoBehaviour
     void collisionConstraint()
     {
         // check for all particles for collisions with the help of the ParticleHash
-        bool collision_particle_belongs_to_anim = false;
         for (int i = 0; i < Particles_Sim.Count; i++)
         {
             ParticleHash.query(Particles_Sim[i], 2 * Particle_radius);
@@ -337,12 +336,11 @@ public class PBS : MonoBehaviour
             foreach (int j in ParticleHash.QueryIds)
             {
                 Vector3 pi = Particles_Sim[i].Position;
-                Vectro3 pj;
+                Vector3 pj;
                 if (j >= Particles_Sim.Count)
                 {
-                    collision_particle_belongs_to_anim = true;
-                    j -= Particles_Sim.Count;
-                    Vector3 pj = Particles_Anim[j].Position;
+                    int anim_j = j - Particles_Sim.Count;
+                    pj = Particles_Anim[anim_j].Position;
                     Vector3 normal = pi - pj;
                     float dist = Mathf.Sqrt(normal.sqrMagnitude);
                     if (dist > 0 && dist < 2 * Particle_radius)
@@ -363,7 +361,7 @@ public class PBS : MonoBehaviour
                 }
                 else
                 {
-                    Vector3 pj = Particles_Sim[j].Position;
+                    pj = Particles_Sim[j].Position;
                     Vector3 normal = pi - pj;
                     float dist = Mathf.Sqrt(normal.sqrMagnitude);
                     if (dist > 0 && dist < 2 * Particle_radius)
