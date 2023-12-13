@@ -39,6 +39,7 @@ public class Hash
         this.TableSize = 2 * maxNumObjects;
         this.CellStart = Enumerable.Repeat(0, this.TableSize + 1).ToList();
         this.CellEntries = Enumerable.Repeat(0, this.MaxNumObjects).ToList();
+
         //this.QuerySize = 0;
         this.MaxNumObjects = maxNumObjects;
     }
@@ -178,7 +179,7 @@ public class PBS : MonoBehaviour
         Debug.Log("Adjacency list assigned!");
 
         // create a hash
-        ParticleHash = new Hash(Particle_radius, Particles_Sim.Count);
+        ParticleHash = new Hash(Particle_radius, Particles_Sim.Count + Particles_Anim.Count);
         Debug.Log(Particles_Sim.Count);
 
     }
@@ -196,7 +197,7 @@ public class PBS : MonoBehaviour
         for (int i = 0; i < Num_substep; i++)
         {
             // update Hash
-            ParticleHash.create(Particles_Sim);
+            ParticleHash.create(Enumerable.Concat(Particles_Sim, Particles_Anim).ToList());
             // prediction 
             for (int j = 0; j < Particles_Sim.Count; j++)
             {
@@ -205,7 +206,7 @@ public class PBS : MonoBehaviour
             // solve constraints
             for (int j = 0; j < Particles_Sim.Count; j++)
             {
-                groundConstraint(this.Particles_Anim[j].Position);
+                groundConstraint(this.Particles_Sim[j].Position);
             }
             collisionConstraint();
             // update meshes 
@@ -305,6 +306,7 @@ public class PBS : MonoBehaviour
     void collisionConstraint()
     {
         // check for all particles for collisions with the help of the ParticleHash
+        bool collision_particle_belongs_to_anim = false;
         for (int i = 0; i < Particles_Sim.Count; i++)
         {
             ParticleHash.query(Particles_Sim[i], 2 * Particle_radius);
@@ -312,25 +314,51 @@ public class PBS : MonoBehaviour
             foreach (int j in ParticleHash.QueryIds)
             {
                 Vector3 pi = Particles_Sim[i].Position;
-                Vector3 pj = Particles_Sim[j].Position;
-                Vector3 normal = pi - pj;
-                float dist = Mathf.Sqrt(normal.sqrMagnitude);
-                if (dist > 0 && dist < 2 * Particle_radius)
+                Vectro3 pj;
+                if (j >= Particles_Sim.Count)
                 {
-                    float C = dist - 2 * Particle_radius;
-                    Vector3 dC1 = normal / dist * C;
-                    Vector3 dC2 = -normal / dist * C;
-                    Particles_Sim[i].Position += dC1;
-                    Particles_Sim[j].Position += dC2;
-                    Vector3.Cross(dC1, dC2);
-                    float v1 = Vector3.Dot(Particles_Sim[i].Velocity, normal);
-                    float v2 = Vector3.Dot(Particles_Sim[j].Velocity, normal);
+                    collision_particle_belongs_to_anim = true;
+                    j -= Particles_Sim.Count;
+                    Vector3 pj = Particles_Anim[j].Position;
+                    Vector3 normal = pi - pj;
+                    float dist = Mathf.Sqrt(normal.sqrMagnitude);
+                    if (dist > 0 && dist < 2 * Particle_radius)
+                    {
+                        float C = dist - 2 * Particle_radius;
+                        Vector3 dC1 = normal / dist * C;
+                        Vector3 dC2 = -normal / dist * C;
+                        Particles_Sim[i].Position += dC1;
 
-                    Particles_Sim[i].Velocity += normal * (v2 - v1);
-                    Particles_Sim[j].Velocity += normal * (v1 - v2);
+                        Vector3.Cross(dC1, dC2);
+                        float v1 = Vector3.Dot(Particles_Sim[i].Velocity, normal);
+
+                        // should be zero since we assume no velocity
+                        //float v2 = Vector3.Dot(Particles_Sim[j].Velocity, normal);
+                        float v2 = 0.0f;
+                        Particles_Sim[i].Velocity += normal * (v2 - v1);
+                    }
                 }
-            }
-         
+                else
+                {
+                    Vector3 pj = Particles_Sim[j].Position;
+                    Vector3 normal = pi - pj;
+                    float dist = Mathf.Sqrt(normal.sqrMagnitude);
+                    if (dist > 0 && dist < 2 * Particle_radius)
+                    {
+                        float C = dist - 2 * Particle_radius;
+                        Vector3 dC1 = normal / dist * C;
+                        Vector3 dC2 = -normal / dist * C;
+                        Particles_Sim[i].Position += dC1;
+                        Particles_Sim[j].Position += dC2;
+                        Vector3.Cross(dC1, dC2);
+                        float v1 = Vector3.Dot(Particles_Sim[i].Velocity, normal);
+                        float v2 = Vector3.Dot(Particles_Sim[j].Velocity, normal);
+
+                        Particles_Sim[i].Velocity += normal * (v2 - v1);
+                        Particles_Sim[j].Velocity += normal * (v1 - v2);
+                    }
+                }                
+            }         
         }
     }
 
