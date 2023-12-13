@@ -128,15 +128,16 @@ public class PBS : MonoBehaviour
 {
     [SerializeField]
     GameObject[] Objects_Anim = null;
+    [SerializeField]
     GameObject[] Objects_Sim = null;
 
     List<Particle> Particles_Anim = new();
-    List<Particle> Particles_Sim= new();
+    List<Particle> Particles_Sim = new();
 
     int[,] adjacencyMatrix;
 
     List<Mesh> Meshes_Anim = new();
-    List<Mesh> Meshes_Sim= new();
+    List<Mesh> Meshes_Sim = new();
 
     public Vector3 Gravitation = new Vector3(0, -9.81f, 0);
     public int Num_substep = 1;
@@ -169,7 +170,7 @@ public class PBS : MonoBehaviour
         }
         Debug.Log("Animated Particles assigned!");
 
-        if(Objects_Sim.Length != 0)
+        if (Objects_Sim.Length != 0)
         {
             foreach (GameObject m in Objects_Sim)
             {
@@ -204,9 +205,15 @@ public class PBS : MonoBehaviour
     void Update()
     {
         // Update animated particle positions
-        foreach (Mesh m in Meshes_Anim)
+        foreach (GameObject m in Objects_Anim)
         {
-            updateAnimParticles(m);
+            Transform beta_surface = m.transform.Find("Beta_Surface");
+            SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
+            Mesh beta_mesh = new Mesh();
+            m_render.BakeMesh(beta_mesh);
+
+            updateAnimParticles(beta_mesh);
+            //Debug.Log(Particles_Anim[0].Position);
         }
 
         // Predict simulation particles position
@@ -251,15 +258,17 @@ public class PBS : MonoBehaviour
         for (int i = 0; i < vertices.Length; i++)
         {
             Particle part = new Particle(vertices[i]);
-            if(flag)
+            if (flag)
             {
                 Particles_Sim.Add(part);
                 part.IsSimulationParticle = true;
-            } else {
+            }
+            else
+            {
                 Particles_Anim.Add(part);
                 part.IsSimulationParticle = false;
             }
-            
+
             /* GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = vertices[i];
             sphere.transform.localScale= Vector3.one*0.01f;
@@ -378,8 +387,8 @@ public class PBS : MonoBehaviour
                         Particles_Sim[i].Velocity += normal * (v2 - v1);
                         Particles_Sim[j].Velocity += normal * (v1 - v2);
                     }
-                }                
-            }         
+                }
+            }
         }
     }
 
