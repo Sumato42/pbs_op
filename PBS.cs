@@ -174,9 +174,8 @@ public class PBS : MonoBehaviour
         {
             foreach (GameObject m in Objects_Sim)
             {
-                Transform beta_surface = m.transform.Find("Beta_Surface");
-                SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
-                Mesh beta_mesh = m_render.sharedMesh;
+                MeshFilter m_render = m.transform.GetComponent<MeshFilter>();
+                Mesh beta_mesh = m_render.mesh;
                 Meshes_Sim.Add(beta_mesh);
 
                 assingParticles(beta_mesh, true);
