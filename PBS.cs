@@ -128,6 +128,7 @@ public class PBS : MonoBehaviour
 {
     [SerializeField]
     GameObject[] Objects_Anim = null;
+    [SerializeField]
     GameObject[] Objects_Sim = null;
 
     List<Particle> Particles_Anim = new();
