@@ -126,14 +126,16 @@ public class Hash
 public class PBS : MonoBehaviour
 {
     [SerializeField]
-    GameObject[] M_Objects = null;
+    GameObject[] Objects_Anim = null;
+    GameObject[] Objects_Sim = null;
 
     List<Particle> Particles_Anim = new();
     List<Particle> Particles_Sim= new();
 
     int[,] adjacencyMatrix;
 
-    List<Mesh> meshes = new();
+    List<Mesh> Meshes_Anim = new();
+    List<Mesh> Meshes_Sim= new();
 
     public Vector3 Gravitation = new Vector3(0, -9.81f, 0);
     public int Num_substep = 1;
@@ -146,7 +148,7 @@ public class PBS : MonoBehaviour
     void Start()
     {
         Debug.Log("Start!");
-        if (M_Objects.Length == 0)
+        if (Objects_Anim.Length == 0)
         {
             return;
         }
@@ -155,27 +157,41 @@ public class PBS : MonoBehaviour
         M_dt /= Num_substep;
 
         // generate and store Particles
-        foreach (GameObject m in M_Objects)
+        foreach (GameObject m in Objects_Anim)
         {
             Transform beta_surface = m.transform.Find("Beta_Surface");
             SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
             Mesh beta_mesh = m_render.sharedMesh;
-            meshes.Add(beta_mesh);
+            Meshes_Anim.Add(beta_mesh);
 
-            assingParticles(beta_mesh);
+            assingParticles(beta_mesh, false);
         }
-        Debug.Log("Particles assigned!");
+        Debug.Log("Animated Particles assigned!");
 
-        // Assign the adjacency matrix after particles are assigned
-        adjacencyMatrix = new int[Particles_Sim.Count, Particles_Sim.Count];
-        InitializeMatrixToZero(adjacencyMatrix);
-
-        foreach (Mesh m in meshes)
+        if(Objects_Sim.Length != 0)
         {
-            updateAdjacencyList(m);
-        }
+            foreach (GameObject m in Objects_Sim)
+            {
+                Transform beta_surface = m.transform.Find("Beta_Surface");
+                SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
+                Mesh beta_mesh = m_render.sharedMesh;
+                Meshes_Sim.Add(beta_mesh);
 
-        Debug.Log("Adjacency list assigned!");
+                assingParticles(beta_mesh, true);
+            }
+            Debug.Log("Simulated Particles assigned!");
+
+            // Assign the adjacency matrix after particles are assigned
+            adjacencyMatrix = new int[Particles_Sim.Count, Particles_Sim.Count];
+            InitializeMatrixToZero(adjacencyMatrix);
+
+            foreach (Mesh m in Meshes_Sim)
+            {
+                updateAdjacencyList(m);
+            }
+
+            Debug.Log("Simulated Adjacency list assigned!");
+        }
 
         // create a hash
         ParticleHash = new Hash(Particle_radius, Particles_Sim.Count);
@@ -187,9 +203,9 @@ public class PBS : MonoBehaviour
     void Update()
     {
         // Update animated particle positions
-        foreach (Mesh m in meshes)
+        foreach (Mesh m in Meshes_Anim)
         {
-            updateParticles(m);
+            updateAnimParticles(m);
         }
 
         // Predict simulation particles position
@@ -227,15 +243,22 @@ public class PBS : MonoBehaviour
         }
     }
 
-    void assingParticles(Mesh mesh)
+    void assingParticles(Mesh mesh, bool flag)
     {
         Vector3[] vertices = mesh.vertices;
 
         for (int i = 0; i < vertices.Length; i++)
         {
             Particle part = new Particle(vertices[i]);
-            part.IsSimulationParticle = false;
-            Particles_Anim.Add(part);
+            if(flag)
+            {
+                Particles_Sim.Add(part);
+                part.IsSimulationParticle = true;
+            } else {
+                Particles_Anim.Add(part);
+                part.IsSimulationParticle = false;
+            }
+            
             /* GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = vertices[i];
             sphere.transform.localScale= Vector3.one*0.01f;
@@ -243,7 +266,7 @@ public class PBS : MonoBehaviour
         }
     }
 
-    private void updateParticles(Mesh mesh)
+    private void updateAnimParticles(Mesh mesh)
     {
         Vector3[] vertices = mesh.vertices;
         for (int i = 0; i < vertices.Length; i++)
@@ -263,13 +286,13 @@ public class PBS : MonoBehaviour
             int index2 = triangles[i * 3 + 1];
             int index3 = triangles[i * 3 + 2];
 
-            Particle v1 = Particles_Anim[index1];
-            Particle v2 = Particles_Anim[index2];
-            Particle v3 = Particles_Anim[index3];
+            Particle v1 = Particles_Sim[index1];
+            Particle v2 = Particles_Sim[index2];
+            Particle v3 = Particles_Sim[index3];
 
-            int i1 = Particles_Anim.IndexOf(v1);
-            int i2 = Particles_Anim.IndexOf(v2);
-            int i3 = Particles_Anim.IndexOf(v3);
+            int i1 = Particles_Sim.IndexOf(v1);
+            int i2 = Particles_Sim.IndexOf(v2);
+            int i3 = Particles_Sim.IndexOf(v3);
 
             if (i1 != -1 && i2 != -1) addEdge(i1, i2);
             if (i2 != -1 && i3 != -1) addEdge(i2, i3);
@@ -279,7 +302,7 @@ public class PBS : MonoBehaviour
 
     void addEdge(int v1, int v2)
     {
-        if (v1 >= 0 && v1 < Particles_Anim.Count && v2 >= 0 && v2 < Particles_Anim.Count)
+        if (v1 >= 0 && v1 < Particles_Sim.Count && v2 >= 0 && v2 < Particles_Sim.Count)
         {
             adjacencyMatrix[v1, v2] = 1;
             adjacencyMatrix[v2, v1] = 1;
