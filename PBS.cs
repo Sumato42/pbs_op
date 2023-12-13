@@ -223,6 +223,7 @@ public class PBS : MonoBehaviour
             // prediction 
             for (int j = 0; j < Particles_Sim.Count; j++)
             {
+                Particles_Sim[j].Velocity += Gravitation * M_dt;
                 Particles_Sim[j].Position = Particles_Sim[j].OldPosition + Particles_Sim[j].Velocity * M_dt;
             }
             // solve constraints
@@ -231,21 +232,26 @@ public class PBS : MonoBehaviour
                 groundConstraint(this.Particles_Sim[j].Position);
             }
             collisionConstraint();
-      
+
+            foreach (Particle p in Particles_Sim)
+            {
+                p.Velocity = (p.Position - p.OldPosition) / M_dt;
+                p.OldPosition = p.Position;
+            }
         }
 
         // update meshes
-        foreach (GameObject m in Objects_Anim)
+        foreach (GameObject m in Objects_Sim)
         {
             UpdateMeshFromParticles(m);
         }
-            
+
     }
 
     void UpdateMeshFromParticles(GameObject gameObjectToUpdateMesh)
     {
-        MeshFilter meshFilter = gameObjectToUpdateMesh.GetComponent<MeshFilter>();
-
+        MeshFilter meshFilter = gameObjectToUpdateMesh.transform.GetComponent<MeshFilter>();
+        Debug.Log(meshFilter != null);
         if (meshFilter != null)
         {
             Mesh mesh = meshFilter.mesh;
@@ -261,6 +267,7 @@ public class PBS : MonoBehaviour
             mesh.vertices = vertices;
             mesh.RecalculateBounds();
             meshFilter.mesh = mesh;
+            Debug.Log(vertices[0]);
         }
     }
 
