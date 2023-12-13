@@ -113,6 +113,8 @@ public class PBS : MonoBehaviour
 
     List<Particle> M_Particles = new();
 
+    int[,] adjacencyMatrix;
+
     public Vector3 Gravitation = new Vector3(0, -9.81, 0);
     public int Num_substep = 1;
     public double M_dt = 0.1;
@@ -142,6 +144,21 @@ public class PBS : MonoBehaviour
         }
         Debug.Log("Particles assigned!");
 
+                // Assign the adjacency matrix after particles are assigned
+        adjacencyMatrix = new int[M_Particles.Count, M_Particles.Count];
+        InitializeMatrixToZero(adjacencyMatrix);
+
+        foreach (GameObject m in M_Objects)
+        {
+            Transform beta_surface = m.transform.Find("Beta_Surface");
+            SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
+            Mesh beta_mesh = m_render.sharedMesh;
+
+            updateAdjacencyList(beta_mesh);
+        }
+
+        Debug.Log("Adjacency list assigned!");
+
         // create a hash
         ParticleHash = new Hash(Particle_radius, M_Particles.Length);
 
@@ -167,6 +184,20 @@ public class PBS : MonoBehaviour
         
     }
 
+    void InitializeMatrixToZero(int[,] matrix)
+    {
+        int rows = matrix.GetLength(0);
+        int columns = matrix.GetLength(1);
+
+        for (int i = 0; i < rows; i++)
+        {
+            for (int j = 0; j < columns; j++)
+            {
+                matrix[i, j] = 0;
+            }
+        }
+    }
+
     void assingParticles(Mesh mesh)
     {
         Vector3[] vertices = mesh.vertices;
@@ -179,6 +210,40 @@ public class PBS : MonoBehaviour
             sphere.transform.position = vertices[i];
             sphere.transform.localScale= Vector3.one*0.01f;
             */
+        }
+    }
+
+        void updateAdjacencyList(Mesh mesh)
+    {
+        int[] triangles = mesh.triangles;
+        int numTriangles = triangles.Length / 3;
+
+        for (int i = 0; i < numTriangles; ++i)
+        {
+            int index1 = triangles[i * 3];
+            int index2 = triangles[i * 3 + 1];
+            int index3 = triangles[i * 3 + 2];
+
+            Particle v1 = M_Particles[index1];
+            Particle v2 = M_Particles[index2];
+            Particle v3 = M_Particles[index3];
+
+            int i1 = M_Particles.IndexOf(v1);
+            int i2 = M_Particles.IndexOf(v2);
+            int i3 = M_Particles.IndexOf(v3);
+
+            if (i1 != -1 && i2 != -1) addEdge(i1, i2);
+            if (i2 != -1 && i3 != -1) addEdge(i2, i3);
+            if (i3 != -1 && i1 != -1) addEdge(i3, i1);
+        }
+    }
+
+    void addEdge(int v1, int v2)
+    {
+        if (v1 >= 0 && v1 < M_Particles.Count && v2 >= 0 && v2 < M_Particles.Count)
+        {
+            adjacencyMatrix[v1, v2] = 1;
+            adjacencyMatrix[v2, v1] = 1;
         }
     }
 
