@@ -1,8 +1,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Unity.VisualScripting;
 using UnityEngine;
-
+using UnityEngine.Android;
 
 public class Particle
 {
@@ -12,13 +13,19 @@ public class Particle
     public Quaternion Orientation;
     public Quaternion Angular_velocity;
     public bool IsSimulationParticle = true;
-    public Particle(Vector3 pos)
+    public float Radius;
+    public GameObject Sphere;
+    public Particle(Vector3 pos, float radius)
     {
         this.Position = pos;
         this.OldPosition = pos;
         this.Velocity = Vector3.zero;
         this.Orientation = Quaternion.identity;
         this.Angular_velocity = Quaternion.identity;
+        this.Radius = radius;
+        //this.Sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        //this.Sphere.transform.position = pos;
+        //this.Sphere.transform.localScale = Vector3.one * radius;
     }
 }
 
@@ -134,6 +141,8 @@ public class PBS : MonoBehaviour
     List<Particle> Particles_Anim = new();
     List<Particle> Particles_Sim = new();
 
+    List<Animator> Animators = new();
+
     int[,] adjacencyMatrix;
 
     List<Mesh> Meshes_Anim = new();
@@ -143,42 +152,53 @@ public class PBS : MonoBehaviour
     public int Num_substep = 1;
     public float M_dt = 0.1f;
     public float Particle_radius = 0.05f;
+    public float Particle_max_vel;
+    public float Particle_max_travel_dist;
 
     public Hash ParticleHash;
+    List<List<int>> AdjacencyList = new();
+    List<List<float>> AdjacencyDistList = new();
 
     // Start is called before the first frame update
     void Start()
-    {
+    {   
         Debug.Log("Start!");
-        if (Objects_Anim.Length == 0)
-        {
-            return;
-        }
 
         // setting the parameters for the simulation
         M_dt /= Num_substep;
-
-        // generate and store Particles
-        foreach (GameObject m in Objects_Anim)
-        {
-            Transform beta_surface = m.transform.Find("Beta_Surface");
-            SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
-            Mesh beta_mesh = m_render.sharedMesh;
-            Meshes_Anim.Add(beta_mesh);
-
-            assingParticles(beta_mesh, false);
+        Particle_max_vel = Particle_radius / M_dt;
+        Particle_max_travel_dist = Particle_max_vel * M_dt * Num_substep;
+        Debug.Log("Max Velocity: " +  Particle_max_vel);
+        Debug.Log("Max Travel Distance: " + Particle_max_travel_dist);
+        
+        if (Objects_Anim.Length != 0)
+        {            
+            // generate and store Particles
+            foreach (GameObject m in Objects_Anim)
+            {
+                // Moved this block to assignParticles for getting access to the world coordinates of each point
+                /*Transform beta_surface = m.transform.Find("Beta_Surface");
+                SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
+                Mesh beta_mesh = m_render.sharedMesh;
+                Meshes_Anim.Add(beta_mesh);
+                */
+                Animators.Add(m.transform.GetComponent<Animator>());
+                assingParticles(m, false);
+            }
+            Animators[0].enabled = false;
+            Debug.Log("Animated Particles assigned!");
         }
-        Debug.Log("Animated Particles assigned!");
 
         if (Objects_Sim.Length != 0)
         {
             foreach (GameObject m in Objects_Sim)
             {
-                MeshFilter m_render = m.transform.GetComponent<MeshFilter>();
+                // Moved this block to assignParticles for getting access to the world coordinates of each point
+                /* MeshFilter m_render = m.transform.GetComponent<MeshFilter>();
                 Mesh beta_mesh = m_render.mesh;
                 Meshes_Sim.Add(beta_mesh);
-
-                assingParticles(beta_mesh, true);
+                */
+                assingParticles(m, true);
             }
             Debug.Log("Simulated Particles assigned!");
 
@@ -191,12 +211,26 @@ public class PBS : MonoBehaviour
                 updateAdjacencyList(m);
             }
 
+            for(int i = 0; i < Particles_Sim.Count; i++)
+            {
+                AdjacencyList.Add(new List<int>());
+                AdjacencyDistList.Add(new List<float>());
+                for(int j = 0; j < Particles_Sim.Count; j++)
+                {
+                    if (adjacencyMatrix[i,j] == 1)
+                    {
+                        AdjacencyList[i].Add(j);
+                        AdjacencyDistList[i].Add((Particles_Sim[i].Position - Particles_Sim[j].Position).magnitude);
+                    }
+                }
+            }
+
             Debug.Log("Simulated Adjacency list assigned!");
         }
 
         // create a hash
         ParticleHash = new Hash(Particle_radius, Particles_Sim.Count + Particles_Anim.Count);
-        Debug.Log(Particles_Sim.Count);
+        Debug.Log("Numbeer of particles: " + Particles_Sim.Count);
 
     }
 
@@ -204,6 +238,7 @@ public class PBS : MonoBehaviour
     void Update()
     {
         // Update animated particle positions
+        AdvanceAnimation();
         foreach (GameObject m in Objects_Anim)
         {
             Transform beta_surface = m.transform.Find("Beta_Surface");
@@ -211,28 +246,36 @@ public class PBS : MonoBehaviour
             Mesh beta_mesh = new Mesh();
             m_render.BakeMesh(beta_mesh);
 
-            updateAnimParticles(beta_mesh);
-            //Debug.Log(Particles_Anim[0].Position);
+            updateAnimParticles(m);
         }
 
         // Predict simulation particles position
         for (int i = 0; i < Num_substep; i++)
         {
-            // update Hash
-            ParticleHash.create(Enumerable.Concat(Particles_Sim, Particles_Anim).ToList());
-            // prediction 
+            //////////////////////////////////////// prediction 
             for (int j = 0; j < Particles_Sim.Count; j++)
             {
                 Particles_Sim[j].Velocity += Gravitation * M_dt;
+                float vel = Particles_Sim[j].Velocity.magnitude;
+                if(vel > Particle_max_vel)
+                {
+                    Particles_Sim[j].Velocity *= Particle_max_vel / vel;
+                }
                 Particles_Sim[j].Position = Particles_Sim[j].OldPosition + Particles_Sim[j].Velocity * M_dt;
-            }
-            // solve constraints
+            }   
+            
+            // update Hash
+            ParticleHash.create(Enumerable.Concat(Particles_Sim, Particles_Anim).ToList());
+
+            //////////////////////////////////////// solve constraints
             for (int j = 0; j < Particles_Sim.Count; j++)
             {
-                groundConstraint(this.Particles_Sim[j].Position);
+                groundConstraint(this.Particles_Sim[j]);
             }
+            distanceConstraint();
             collisionConstraint();
-
+            Particles_Sim[0].Position = Particles_Sim[0].OldPosition;
+            Particles_Sim[10].Position = Particles_Sim[10].OldPosition;
             foreach (Particle p in Particles_Sim)
             {
                 p.Velocity = (p.Position - p.OldPosition) / M_dt;
@@ -240,7 +283,7 @@ public class PBS : MonoBehaviour
             }
         }
 
-        // update meshes
+        //////////////////////////////////////// update meshes
         foreach (GameObject m in Objects_Sim)
         {
             UpdateMeshFromParticles(m);
@@ -248,30 +291,31 @@ public class PBS : MonoBehaviour
 
     }
 
-    void UpdateMeshFromParticles(GameObject gameObjectToUpdateMesh)
+    void UpdateMeshFromParticles(GameObject m)
     {
-        MeshFilter meshFilter = gameObjectToUpdateMesh.transform.GetComponent<MeshFilter>();
-        Debug.Log(meshFilter != null);
+        MeshFilter meshFilter = m.transform.GetComponent<MeshFilter>();
         if (meshFilter != null)
         {
             Mesh mesh = meshFilter.mesh;
             Vector3[] vertices = mesh.vertices;
-
+            Vector3 object_pos;
+            Quaternion object_rot;
+            m.transform.GetPositionAndRotation(out object_pos, out object_rot);
+            object_rot = Quaternion.Inverse(object_rot);
             // Update mesh vertices based on Particle positions
             for (int i = 0; i < Particles_Sim.Count; i++)
             {
-                vertices[i] = Particles_Sim[i].Position;
+                vertices[i] = Vector3.Scale(object_rot * (Particles_Sim[i].Position - m.transform.position), new Vector3(1 / m.transform.localScale.x, 1 / m.transform.localScale.y, 1 / m.transform.localScale.z));
+                //Particles_Sim[i].Sphere.transform.position = Particles_Sim[i].Position;
             }
 
             // Assign updated vertices to the mesh
             mesh.vertices = vertices;
             mesh.RecalculateBounds();
             meshFilter.mesh = mesh;
-            Debug.Log(vertices[0]);
+            
         }
     }
-
-
 
     void InitializeMatrixToZero(int[,] matrix)
     {
@@ -287,13 +331,33 @@ public class PBS : MonoBehaviour
         }
     }
 
-    void assingParticles(Mesh mesh, bool flag)
+    void assingParticles(GameObject m, bool flag)
     {
+        Mesh mesh = new Mesh();
+        if(flag)
+        {
+            MeshFilter m_render = m.transform.GetComponent<MeshFilter>();
+            mesh = m_render.mesh;
+            Meshes_Sim.Add(mesh);
+        }
+        else
+        {
+            Transform beta_surface = m.transform.Find("Beta_Surface");
+            SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
+            m_render.BakeMesh(mesh);
+            Meshes_Anim.Add(mesh);
+        }
+        
         Vector3[] vertices = mesh.vertices;
-
+        Vector3 pos, object_pos;
+        Quaternion object_rot;
         for (int i = 0; i < vertices.Length; i++)
         {
-            Particle part = new Particle(vertices[i]);
+            
+            m.transform.GetPositionAndRotation(out object_pos, out object_rot);
+            pos = object_rot * Vector3.Scale(vertices[i], m.transform.localScale) + object_pos;
+            Particle part = new Particle(pos, Particle_radius);
+
             if (flag)
             {
                 Particles_Sim.Add(part);
@@ -305,6 +369,7 @@ public class PBS : MonoBehaviour
                 part.IsSimulationParticle = false;
             }
 
+            // Moved to Particle such that the shperes positions can be updated according to the Particles
             /* GameObject sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             sphere.transform.position = vertices[i];
             sphere.transform.localScale= Vector3.one*0.01f;
@@ -312,12 +377,20 @@ public class PBS : MonoBehaviour
         }
     }
 
-    private void updateAnimParticles(Mesh mesh)
+    private void updateAnimParticles(GameObject m)
     {
-        Vector3[] vertices = mesh.vertices;
+        Transform beta_surface = m.transform.Find("Beta_Surface");
+        SkinnedMeshRenderer m_render = beta_surface.GetComponent<SkinnedMeshRenderer>();
+        Mesh beta_mesh = new Mesh();
+        m_render.BakeMesh(beta_mesh);
+        Vector3[] vertices = beta_mesh.vertices;
+        Vector3 object_pos;
+        Quaternion object_rot;
         for (int i = 0; i < vertices.Length; i++)
         {
-            Particles_Anim[i].Position = vertices[i];
+            m.transform.GetPositionAndRotation(out object_pos, out object_rot);
+            Particles_Anim[i].Position = object_rot * Vector3.Scale(vertices[i], m.transform.localScale) + object_pos; 
+            //Particles_Anim[i].Sphere.transform.position = Particles_Anim[i].Position;
         }
     }
 
@@ -356,19 +429,38 @@ public class PBS : MonoBehaviour
     }
 
 
-    void groundConstraint(Vector3 pos)
+    void groundConstraint(Particle p)
     {
-        if (pos.y >= 0)
+        if (p.Position.y >= 0)
             return;
-        float C = pos.y;
+        p.Position.y = 0;
+        return;
+        /*float C = p.Position.y;
         Vector3 dC = new Vector3(0, 1, 0);
         float lambda = -C / dC.sqrMagnitude;
-        pos += lambda * dC;
+        p.Position += lambda * dC;
+        */
     }
 
     void distanceConstraint()
     {
-        // Need the Edges of the mesh and the corresponding distances
+        // For each Particle, iterate over all neighbours and compair current distance to initial rest distance
+        for(int i = 0; i < Particles_Sim.Count; i++)
+        {
+            for(int j = 0; j < AdjacencyList[i].Count; j++)
+            {
+                Vector3 pi = Particles_Sim[i].Position;
+                Vector3 pj = Particles_Sim[AdjacencyList[i][j]].Position;
+                float dist = (pi - pj).magnitude;
+                float restDist = AdjacencyDistList[i][j];
+                float C = dist - restDist;
+                Vector3 dC1 = (pi - pj) /dist;
+                Vector3 dC2 = (pj - pi) /dist;
+                float lambda = -C/(dC1.sqrMagnitude + dC2.sqrMagnitude);
+                Particles_Sim[i].Position += lambda * dC1;
+                Particles_Sim[AdjacencyList[i][j]].Position += lambda * dC2;
+            }
+        }
     }
 
     void collisionConstraint()
@@ -387,13 +479,14 @@ public class PBS : MonoBehaviour
                     int anim_j = j - Particles_Sim.Count;
                     pj = Particles_Anim[anim_j].Position;
                     Vector3 normal = pi - pj;
-                    float dist = Mathf.Sqrt(normal.sqrMagnitude);
+                    float dist = normal.magnitude;
+                    //float mindist = Mathf.Min(dist, 2 * Particle_radius);
                     if (dist > 0 && dist < 2 * Particle_radius)
                     {
-                        float C = dist - 2 * Particle_radius;
+                        float C = 2 * Particle_radius - dist;
                         Vector3 dC1 = normal / dist * C;
                         Vector3 dC2 = -normal / dist * C;
-                        Particles_Sim[i].Position += dC1;
+                        Particles_Sim[i].Position += dC1/2;
 
                         Vector3.Cross(dC1, dC2);
                         float v1 = Vector3.Dot(Particles_Sim[i].Velocity, normal);
@@ -411,11 +504,12 @@ public class PBS : MonoBehaviour
                     float dist = Mathf.Sqrt(normal.sqrMagnitude);
                     if (dist > 0 && dist < 2 * Particle_radius)
                     {
-                        float C = dist - 2 * Particle_radius;
+                        float C = 2 * Particle_radius - dist;
                         Vector3 dC1 = normal / dist * C;
                         Vector3 dC2 = -normal / dist * C;
-                        Particles_Sim[i].Position += dC1;
-                        Particles_Sim[j].Position += dC2;
+                        Particles_Sim[i].Position += dC1/2;
+                        Particles_Sim[j].Position += dC2/2;
+                        // ToDo Cloth Friction
                         Vector3.Cross(dC1, dC2);
                         float v1 = Vector3.Dot(Particles_Sim[i].Velocity, normal);
                         float v2 = Vector3.Dot(Particles_Sim[j].Velocity, normal);
@@ -428,4 +522,21 @@ public class PBS : MonoBehaviour
         }
     }
 
+    public void AdvanceAnimation()
+    {
+        if(Animators.Count == 0) {
+            return;
+        }
+        float currentNormalizedTime = GetCurrentNormalizedTime();
+        float newNormalizedTime = currentNormalizedTime + M_dt * Num_substep;
+        Animators[0].Play("Jog In Circle", -1, newNormalizedTime);
+        Animators[0].Update(0); // Manually update the animator to apply the new time
+    }
+
+    // Get the current normalized time of the animation
+    private float GetCurrentNormalizedTime()
+    {
+        AnimatorStateInfo stateInfo = Animators[0].GetCurrentAnimatorStateInfo(0);
+        return stateInfo.normalizedTime;
+    }
 }
