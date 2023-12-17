@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -154,10 +155,20 @@ public class PBS : MonoBehaviour
     public float Particle_radius = 0.05f;
     public float Particle_max_vel;
     public float Particle_max_travel_dist;
+    public float Bending_Compliance = 1.0f;
+    public float Stretch_Compliance = 0.0f;
+    public bool ShowSimShperes = false;
+    public bool ShowAnimShpers = false;
+    public bool UseDistanceConstraint = true;
+    public bool UseBendingConstraint = true;
+    public bool UseCollisionConstraint = true;
 
     public Hash ParticleHash;
     List<List<int>> AdjacencyList = new();
     List<List<float>> AdjacencyDistList = new();
+
+    List<(int, int, int)> Edges = new();
+    List<(int, int, float)> BendingDistances = new();
 
     // Start is called before the first frame update
     void Start()
@@ -206,9 +217,20 @@ public class PBS : MonoBehaviour
             adjacencyMatrix = new int[Particles_Sim.Count, Particles_Sim.Count];
             InitializeMatrixToZero(adjacencyMatrix);
 
+            Edges = new();
             foreach (Mesh m in Meshes_Sim)
             {
                 updateAdjacencyList(m);
+            }
+            Edges.Sort((a, b) => ((a.Item1 < b.Item1) || (a.Item1 == b.Item1 && a.Item2 < b.Item2)) ? -1 : 1);
+            Debug.Log("Edges sorted!");
+
+            for(int i = 0; i < Edges.Count-1; i++)
+            {
+                if (Edges[i].Item1 == Edges[i+1].Item1 && Edges[i].Item2 == Edges[i+1].Item2)
+                {
+                    BendingDistances.Add((Edges[i].Item3, Edges[i+1].Item3, (Particles_Sim[Edges[i].Item3].Position - Particles_Sim[Edges[i+1].Item3].Position).magnitude));
+                }
             }
 
             for(int i = 0; i < Particles_Sim.Count; i++)
@@ -272,10 +294,20 @@ public class PBS : MonoBehaviour
             {
                 groundConstraint(this.Particles_Sim[j]);
             }
-            distanceConstraint();
-            collisionConstraint();
-            Particles_Sim[0].Position = Particles_Sim[0].OldPosition;
-            Particles_Sim[10].Position = Particles_Sim[10].OldPosition;
+            if(UseDistanceConstraint)
+            {
+                distanceConstraint();
+            }
+            if(UseBendingConstraint)
+            {
+                bendConstraint();
+            }
+            if(UseCollisionConstraint)
+            {
+                collisionConstraint();
+            }
+            Particles_Sim[739].Position = Particles_Sim[739].OldPosition;
+            Particles_Sim[196].Position = Particles_Sim[196].OldPosition;
             foreach (Particle p in Particles_Sim)
             {
                 p.Velocity = (p.Position - p.OldPosition) / M_dt;
@@ -306,7 +338,9 @@ public class PBS : MonoBehaviour
             for (int i = 0; i < Particles_Sim.Count; i++)
             {
                 vertices[i] = Vector3.Scale(object_rot * (Particles_Sim[i].Position - m.transform.position), new Vector3(1 / m.transform.localScale.x, 1 / m.transform.localScale.y, 1 / m.transform.localScale.z));
-                //Particles_Sim[i].Sphere.transform.position = Particles_Sim[i].Position;
+                Particles_Sim[i].Sphere.transform.position = Particles_Sim[i].Position;
+                Particles_Sim[i].Sphere.name = "Sphere_" + i;
+                Particles_Sim[i].Sphere.GetComponent<Renderer>().enabled = ShowSimShperes;
             }
 
             // Assign updated vertices to the mesh
@@ -362,6 +396,9 @@ public class PBS : MonoBehaviour
             {
                 Particles_Sim.Add(part);
                 part.IsSimulationParticle = true;
+                part.Sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                part.Sphere.transform.position = pos;
+                part.Sphere.transform.localScale = Vector3.one * Particle_radius;
             }
             else
             {
@@ -404,6 +441,8 @@ public class PBS : MonoBehaviour
             int index1 = triangles[i * 3];
             int index2 = triangles[i * 3 + 1];
             int index3 = triangles[i * 3 + 2];
+
+            Edges.Add((index1, index2, index3));
 
             Particle v1 = Particles_Sim[index1];
             Particle v2 = Particles_Sim[index2];
@@ -451,15 +490,34 @@ public class PBS : MonoBehaviour
             {
                 Vector3 pi = Particles_Sim[i].Position;
                 Vector3 pj = Particles_Sim[AdjacencyList[i][j]].Position;
+                float alpha = Stretch_Compliance / M_dt / M_dt;
                 float dist = (pi - pj).magnitude;
                 float restDist = AdjacencyDistList[i][j];
                 float C = dist - restDist;
                 Vector3 dC1 = (pi - pj) /dist;
                 Vector3 dC2 = (pj - pi) /dist;
-                float lambda = -C/(dC1.sqrMagnitude + dC2.sqrMagnitude);
+                float lambda = -C/(dC1.sqrMagnitude + dC2.sqrMagnitude + alpha);
                 Particles_Sim[i].Position += lambda * dC1;
                 Particles_Sim[AdjacencyList[i][j]].Position += lambda * dC2;
             }
+        }
+    }
+
+    void bendConstraint()
+    {
+        foreach((int, int, float) t in BendingDistances)
+        {
+            Vector3 p1 = Particles_Sim[t.Item1].Position;
+            Vector3 p2 = Particles_Sim[t.Item2].Position;
+            float dist = (p1 - p2).magnitude;
+            float restDist = t.Item3;
+            float alpha = Bending_Compliance / M_dt / M_dt;
+            float C = dist - restDist;
+            Vector3 dC1 = (p1 - p2) / dist;
+            Vector3 dC2 = (p2 - p1) / dist;
+            float lambda = -C / (dC1.sqrMagnitude + dC2.sqrMagnitude + alpha);
+            Particles_Sim[t.Item1].Position += lambda * dC1;
+            Particles_Sim[t.Item2].Position += lambda * dC2;
         }
     }
 
@@ -473,17 +531,18 @@ public class PBS : MonoBehaviour
             foreach (int j in ParticleHash.QueryIds)
             {
                 Vector3 pi = Particles_Sim[i].Position;
-                Vector3 pj;
+                Vector3 pj; 
+                float mindist = 2 * Particle_radius;
+
                 if (j >= Particles_Sim.Count)
                 {
                     int anim_j = j - Particles_Sim.Count;
                     pj = Particles_Anim[anim_j].Position;
                     Vector3 normal = pi - pj;
                     float dist = normal.magnitude;
-                    //float mindist = Mathf.Min(dist, 2 * Particle_radius);
-                    if (dist > 0 && dist < 2 * Particle_radius)
+                    if (dist > 0 && dist < mindist)
                     {
-                        float C = 2 * Particle_radius - dist;
+                        float C = mindist - dist;
                         Vector3 dC1 = normal / dist * C;
                         Vector3 dC2 = -normal / dist * C;
                         Particles_Sim[i].Position += dC1/2;
@@ -502,9 +561,19 @@ public class PBS : MonoBehaviour
                     pj = Particles_Sim[j].Position;
                     Vector3 normal = pi - pj;
                     float dist = Mathf.Sqrt(normal.sqrMagnitude);
-                    if (dist > 0 && dist < 2 * Particle_radius)
+                    for (int k = 0; k < AdjacencyList[i].Count; k++)
                     {
-                        float C = 2 * Particle_radius - dist;
+                        if (AdjacencyList[i][k] == j)
+                        {
+                            if (AdjacencyDistList[i][k] < mindist)
+                            {
+                                mindist = AdjacencyDistList[i][k];
+                            }
+                        }
+                    }
+                    if (dist > 0 && dist < mindist)
+                    {
+                        float C = mindist - dist;
                         Vector3 dC1 = normal / dist * C;
                         Vector3 dC2 = -normal / dist * C;
                         Particles_Sim[i].Position += dC1/2;
@@ -528,7 +597,7 @@ public class PBS : MonoBehaviour
             return;
         }
         float currentNormalizedTime = GetCurrentNormalizedTime();
-        float newNormalizedTime = currentNormalizedTime + M_dt * Num_substep;
+        float newNormalizedTime = currentNormalizedTime + M_dt * Num_substep/2;
         Animators[0].Play("Jog In Circle", -1, newNormalizedTime);
         Animators[0].Update(0); // Manually update the animator to apply the new time
     }
