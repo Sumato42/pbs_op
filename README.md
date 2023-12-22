@@ -1,5 +1,5 @@
 
-# Physival Based Simulation Project: Adding Physics to Animated Characters with Oriented Particles
+# Physically-Based Simulation Project: Adding Physics to Animated Characters with Oriented Particles
 In this project, we implemented a physically based cloth simulation scene with consideration of the paper "Adding Physics to Animated Characters with Oriented Particles" by Müller et al.
 Due to time constraints, we only managed to simulate the cloth using particles and Position Based Dynamics (PBD). We used Unity to improve the rendering pipeline of the scene and thus improve the performance of the simulation. All collision detection and simulation are handled in the PBS.cs file, which is assigned to a Unity GameObject so that the user can interact with the simulation during runtime.
 
