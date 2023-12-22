@@ -73,7 +73,7 @@ StyleCopReport.xml
 *_p.c
 *_h.h
 *.ilk
-*.meta
+#*.meta
 *.iobj
 *.pch
 *.pdb
@@ -400,3 +400,17 @@ build/*
 
 out/*
 
+# Modified from:
+#     https://github.com/github/gitignore/blob/master/Unity.gitignore
+
+*/[Ll]ibrary/
+*/[Uu]serSettings/
+*[Tt]emp/
+*[Oo]bj/
+*/[Bb]uild/
+*/[Bb]uilds/
+*/[Ll]ogs/
+*/[Mm]emoryCaptures/
+
+# Uncomment this line if you wish to ignore the asset store tools plugin
+# [Aa]ssets/AssetStoreTools*
